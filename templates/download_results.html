@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloaded Logos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .logo-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .logo-item {
+            margin: 20px;
+            text-align: center;
+        }
+        .logo-item img {
+            max-width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Downloaded Logos</h1>
+    <div class="logo-container">
+        {% if logos %}
+            {% for brand, url in logos.items() %}
+            <div class="logo-item">
+                <img src="{{ url }}" alt="{{ brand }}">
+                <p>{{ brand }}</p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No logos were downloaded.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

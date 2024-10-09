@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Logo Repository</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .logo-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .logo-item {
+            margin: 20px;
+            text-align: center;
+        }
+        .logo-item img, .logo-item object {
+            max-width: 200px;
+            max-height: 200px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .button-group {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        .button-group button, .button-group a {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .button-group .view-btn {
+            background-color: #007BFF;
+        }
+        .button-group .download-btn {
+            background-color: #28A745;
+        }
+        .button-group .delete-btn {
+            background-color: #DC3545;
+        }
+        .button-group button:hover, .button-group a:hover {
+            opacity: 0.9;
+        }
+        .button-group i {
+            font-size: 10px;
+        }
+        .back-home {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .back-home a {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+        .back-home a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Brand Logo Repository</h1>
+
+    <!-- Back to Home Button -->
+    <div class="back-home">
+        <a href="/">Back to Home</a>
+    </div>
+
+    <!-- Search Form -->
+    <div class="search-container">
+        <form method="get" action="/logos">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search for a brand...">
+            <input type="submit" value="Search">
+        </form>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="upload-section">
+        <form action="/upload" method="post" enctype="multipart/form-data" style="margin-bottom: 20px;">
+            <div>
+                <input type="text" name="brand_name" placeholder="Enter Brand Name" required>
+                <input type="file" name="file" required>
+                <input type="submit" value="Upload Logo">
+            </div>
+        </form>
+        <a href="{{ url_for('upload_excel') }}" style="background-color: #17a2b8; padding: 10px 20px; color: white; border-radius: 5px; text-decoration: none;">
+            <i class="fas fa-file-excel"></i> Upload Logos by Excel
+        </a>
+    </div>
+
+    <h2>Uploaded Logos</h2>
+
+    <div class="logo-container">
+        {% for logo, brand in logos.items() %}
+        <div class="logo-item">
+            <!-- Detect file type and render appropriately -->
+            {% if logo.endswith('.svg') %}
+                <object type="image/svg+xml" data="{{ url_for('uploaded_file', filename=logo) }}" class="logo"></object>
+            {% else %}
+                <img src="{{ url_for('uploaded_file', filename=logo) }}" alt="{{ brand }}" class="logo">
+            {% endif %}
+            <p>{{ brand }}</p>
+            <div class="button-group">
+                <a href="{{ url_for('uploaded_file', filename=logo) }}" target="_blank" class="view-btn">
+                    <i class="fas fa-eye"></i>
+                </a>
+                <a href="{{ url_for('download_logo', filename=logo) }}" download class="download-btn">
+                    <i class="fas fa-download"></i>
+                </a>
+                <form action="{{ url_for('delete_logo', filename=logo) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="delete-btn">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>    
+</body>
+</html>

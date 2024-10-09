@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Excel</title>
+    <style>
+        #progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+        }
+
+        #progress-bar-fill {
+            width: 0;
+            height: 30px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Excel File</h1>
+
+    <form id="upload-form" action="/upload_excel" method="post" enctype="multipart/form-data">
+        <input type="file" name="excel_file" accept=".xlsx, .xls">
+        <input type="submit" value="Upload and Find Logos">
+    </form>
+
+    <div id="progress-bar">
+        <div id="progress-bar-fill">0%</div>
+    </div>
+
+    <script>
+        document.getElementById('upload-form').onsubmit = function() {
+            const progressBarFill = document.getElementById('progress-bar-fill');
+            let interval = setInterval(function() {
+                let width = parseInt(progressBarFill.style.width);
+                if (width >= 100) {
+                    clearInterval(interval);
+                } else {
+                    width += 10;  // Example increment, you'll want to update this dynamically
+                    progressBarFill.style.width = width + '%';
+                    progressBarFill.innerText = width + '%';
+                }
+            }, 1000);  // Update every second
+        };
+    </script>
+</body>
+</html>

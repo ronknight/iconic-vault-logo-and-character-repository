@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Licensed Characters</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .character-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .character-item {
+            margin: 20px;
+            text-align: center;
+        }
+        .character-item img {
+            max-width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Licensed Disney Characters</h1>
+
+    <div class="search-container">
+        <form method="get" action="/characters">
+            <input type="text" name="character_search" value="" placeholder="Search for a Disney character...">
+            <input type="submit" value="Search Characters">
+        </form>
+    </div>
+
+    <div class="character-container">
+        {% for character in characters %}
+        <div class="character-item">
+            <img src="{{ character.imageUrl }}" alt="{{ character.name }}">
+            <p>{{ character.name }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</body>
+</html>
