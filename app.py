@@ -200,6 +200,7 @@ def home_page():
 @app.route('/')
 def index_page():
     query = request.args.get('q', '')  # Search query for logos
+    sort_order = request.args.get('sort', 'asc')  # Sort order (asc or desc)
     logos = os.listdir(app.config['UPLOAD_FOLDER'])
 
     # Filter logos based on search query
@@ -208,12 +209,20 @@ def index_page():
     else:
         filtered_logos = brands_data
 
-    return render_template('index.html', logos=filtered_logos, query=query)
+    # Sort the filtered logos by brand name based on the selected order
+    if sort_order == 'asc':
+        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda x: x[1].lower()))
+    elif sort_order == 'desc':
+        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda x: x[1].lower(), reverse=True))
+
+    return render_template('index.html', logos=sorted_logos, query=query, sort_order=sort_order)
+
 
 # Route for logos.html
 @app.route('/logos')
 def logos_page():
     query = request.args.get('q', '')  # Search query for logos
+    sort_order = request.args.get('sort', 'asc')  # Sort order (asc or desc)
     logos = os.listdir(app.config['UPLOAD_FOLDER'])
     
     # Filter logos based on search query
@@ -222,7 +231,14 @@ def logos_page():
     else:
         filtered_logos = brands_data
 
-    return render_template('logos.html', logos=filtered_logos, query=query)
+    # Sort the filtered logos by brand name based on the selected order
+    if sort_order == 'asc':
+        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda x: x[1].lower()))
+    elif sort_order == 'desc':
+        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda x: x[1].lower(), reverse=True))
+
+    return render_template('logos.html', logos=sorted_logos, query=query, sort_order=sort_order)
+
 
 # Route for match_results.html
 @app.route('/match_results')

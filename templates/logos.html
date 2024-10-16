@@ -115,6 +115,15 @@
     </div>
 
     <h2>Uploaded Logos</h2>
+    <!-- Sort Options -->
+    <div class="sort-container" style="text-align: center; margin-bottom: 20px;">
+        <a href="?sort=asc" style="background-color: #007BFF; padding: 10px 20px; color: white; border-radius: 5px; text-decoration: none;">
+            Sort Ascending <i class="fas fa-sort-alpha-down"></i>
+        </a>
+        <a href="?sort=desc" style="background-color: #28A745; padding: 10px 20px; color: white; border-radius: 5px; text-decoration: none;">
+            Sort Descending <i class="fas fa-sort-alpha-down-alt"></i>
+        </a>
+    </div>
 
     <div class="logo-container">
         {% for logo, brand in logos.items() %}
