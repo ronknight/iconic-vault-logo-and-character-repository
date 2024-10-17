@@ -1,5 +1,7 @@
 import os
 import json
+import requests
+from urllib.parse import urlparse
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
 from dotenv import load_dotenv
 from brandfetch import search_and_download_logo
@@ -14,12 +16,17 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 # File paths
 UPLOAD_FOLDER = 'static/logos'
+CHARACTERS_FOLDER = 'static/characters'  # Add characters folder for images
 BRANDS_FILE = 'brands.json'
 CHARACTERS_FILE = 'characters.json'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# Ensure directories exist
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+if not os.path.exists(CHARACTERS_FOLDER):
+    os.makedirs(CHARACTERS_FOLDER)
 
 if os.path.exists(BRANDS_FILE):
     with open(BRANDS_FILE, 'r') as f:
@@ -32,6 +39,30 @@ if os.path.exists(CHARACTERS_FILE):
         characters_data = json.load(f)
 else:
     characters_data = {}
+
+# Function to download and save character images
+def download_image(image_url, character_name):
+    try:
+        # Extract file extension from the URL
+        parsed_url = urlparse(image_url)
+        file_extension = os.path.splitext(parsed_url.path)[1]
+
+        # Set the local filename
+        filename = f"{character_name.replace(' ', '_')}{file_extension}"
+        file_path = os.path.join(CHARACTERS_FOLDER, filename)
+
+        # Check if the file already exists
+        if not os.path.exists(file_path):
+            response = requests.get(image_url)
+            if response.status_code == 200:
+                with open(file_path, 'wb') as f:
+                    f.write(response.content)
+            else:
+                print(f"Failed to download image for {character_name}: {response.status_code}")
+        return filename  # Return the filename to save it in JSON
+    except Exception as e:
+        print(f"Error downloading image for {character_name}: {e}")
+        return None
 
 # Home route
 @app.route('/')
@@ -56,7 +87,6 @@ def logos_page():
         sorted_logos = dict(sorted(filtered_logos.items(), key=lambda item: item[1].lower(), reverse=True))
 
     return render_template('logos.html', logos=sorted_logos, query=query, sort_order=sort_order)
-
 
 # Upload brand logos via form
 @app.route('/upload', methods=['POST'])
@@ -160,7 +190,18 @@ def characters_page():
         # Fetch from Disney and Marvel APIs based on query
         disney_characters = fetch_disney_character(query)
         marvel_characters = fetch_marvel_character(query)
-        combined_characters = {**disney_characters, **marvel_characters}
+
+        # Combine the results and download the images
+        combined_characters = {}
+        for character, image_url in {**disney_characters, **marvel_characters}.items():
+            local_image_filename = download_image(image_url, character)
+            if local_image_filename:
+                combined_characters[character] = os.path.join(CHARACTERS_FOLDER, local_image_filename)
+
+        # Save the fetched characters to the characters_data and write to JSON file
+        characters_data.update(combined_characters)
+        with open(CHARACTERS_FILE, 'w') as f:
+            json.dump(characters_data, f)
     else:
         combined_characters = characters_data  # Default loaded from local storage
 
@@ -169,6 +210,17 @@ def characters_page():
     sorted_characters = dict(sorted(combined_characters.items(), key=lambda item: item[0].lower(), reverse=(sort_order == 'desc')))
 
     return render_template('characters.html', characters=sorted_characters, query=query, sort_order=sort_order)
+
+@app.route('/delete_character/<character_name>', methods=['POST'])
+def delete_character(character_name):
+    if character_name in characters_data:
+        del characters_data[character_name]
+        with open(CHARACTERS_FILE, 'w') as f:
+            json.dump(characters_data, f)
+        flash(f"Character '{character_name}' deleted successfully.")
+    else:
+        flash(f"Character '{character_name}' not found.")
+    return redirect(url_for('characters_page'))
 
 # Excel file upload for characters
 @app.route('/upload_characters_excel', methods=['GET', 'POST'])
@@ -202,8 +254,10 @@ def upload_characters_excel():
                 print(f"Character {character_name} already exists, skipping...")
                 continue
 
-            characters_data[character_name] = image_url
-            print(f"Added {character_name} to the character repository.")
+            local_image_filename = download_image(image_url, character_name)
+            if local_image_filename:
+                characters_data[character_name] = os.path.join(CHARACTERS_FOLDER, local_image_filename)
+                print(f"Added {character_name} to the character repository.")
 
         with open(CHARACTERS_FILE, 'w') as f:
             json.dump(characters_data, f)
