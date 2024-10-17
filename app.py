@@ -155,23 +155,20 @@ def upload_excel():
 # Licensed Characters Route
 @app.route('/characters', methods=['GET', 'POST'])
 def characters_page():
-    query = request.args.get('character_search', '').strip()  # Search query for characters
-    character = None
+    query = request.args.get('character_search', '')  # Search query for characters
     if query:
-        # First try fetching Disney character, then fall back to Marvel character
-        character = fetch_disney_character(query) or fetch_marvel_character(query)
-
-    if character:
-        # Add to character repository if not already there
-        if character['name'] not in characters_data:
-            characters_data[character['name']] = character['image']
-            with open(CHARACTERS_FILE, 'w') as f:
-                json.dump(characters_data, f)
-        flash(f"Found and saved character: {character['name']}")
+        # Fetch from Disney and Marvel APIs based on query
+        disney_characters = fetch_disney_character(query)
+        marvel_characters = fetch_marvel_character(query)
+        combined_characters = {**disney_characters, **marvel_characters}
     else:
-        flash(f"No character found for: {query}")
+        combined_characters = characters_data  # Default loaded from local storage
 
-    return render_template('characters.html', characters=characters_data)
+    # Sorting functionality
+    sort_order = request.args.get('sort', 'asc')
+    sorted_characters = dict(sorted(combined_characters.items(), key=lambda item: item[0].lower(), reverse=(sort_order == 'desc')))
+
+    return render_template('characters.html', characters=sorted_characters, query=query, sort_order=sort_order)
 
 # Excel file upload for characters
 @app.route('/upload_characters_excel', methods=['GET', 'POST'])

@@ -13,27 +13,22 @@
         }
         h1, h2 {
             text-align: center;
-            margin-bottom: 30px;
         }
         .header-container {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
-        .search-container form {
+        .search-container {
             display: flex;
-            justify-content: center;
             align-items: center;
         }
         .search-container input[type="text"] {
             padding: 10px;
-            width: 300px;
             font-size: 16px;
-            border: 2px solid #007BFF;
             border-radius: 8px;
-            outline: none;
-            margin-right: 10px;
+            border: 1px solid #ccc;
         }
         .search-container input[type="submit"] {
             padding: 10px 20px;
@@ -41,66 +36,79 @@
             color: white;
             border: none;
             border-radius: 8px;
+            margin-left: 10px;
             cursor: pointer;
-            font-size: 16px;
         }
-        .masonry-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            grid-gap: 20px;
+        .sort-container {
+            display: flex;
+            align-items: center;
+        }
+        .sort-container select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #28A745;
+            background-color: white;
+        }
+        .upload-section {
+            display: flex;
+            align-items: center;
+        }
+        .upload-section form {
+            margin-right: 20px;
+        }
+        .upload-section input[type="text"],
+        .upload-section input[type="file"] {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        .upload-section input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #28A745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .upload-section a {
+            padding: 10px 20px;
+            background-color: #28A745;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+        .characters-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
         }
         .character-item {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            background-color: #ffffff;
+            margin: 20px;
             text-align: center;
-            height: 300px;
         }
         .character-item img {
-            max-width: 100%;
-            max-height: 150px;
-            object-fit: contain;
-            display: block;
-            flex-grow: 1;
-        }
-        .character-item p {
-            margin-top: 10px;
-            margin-bottom: 0;
-            font-size: 14px;
-            flex-shrink: 0;
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #f9f9f9;
         }
         .button-group {
-            display: flex;
-            justify-content: space-around;
             margin-top: 10px;
         }
-        .button-group button, .button-group a {
-            width: 32px;
-            height: 32px;
-            padding: 0;
-            border: none;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .button-group .view-btn {
+        .button-group a {
+            padding: 10px 20px;
+            margin: 5px;
             background-color: #007BFF;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            cursor: pointer;
         }
-        .button-group .download-btn {
-            background-color: #28A745;
-        }
-        .button-group .delete-btn {
-            background-color: #DC3545;
-        }
+        /* Back to Home Button */
         .back-home {
             text-align: center;
             margin-top: 40px;
@@ -112,41 +120,65 @@
             text-decoration: none;
             border-radius: 8px;
         }
+        .back-home a:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
-    <h1>Licensed Characters Repository</h1>
 
-    <div class="header-container">
-        <div class="search-container">
-            <form method="get" action="/characters">
-                <input type="text" name="character_search" placeholder="Search for a character...">
-                <input type="submit" value="Search">
-            </form>
+<h1>Licensed Characters Repository</h1>
+
+<div class="header-container">
+    <div class="search-container">
+        <form method="get" action="/characters">
+            <input type="text" name="character_search" value="{{ query }}" placeholder="Search for a character...">
+            <input type="submit" value="Search">
+        </form>
+    </div>
+    <div class="sort-container">
+        <form method="get" action="/characters">
+            <select name="sort" onchange="this.form.submit()">
+                <option value="asc" {% if sort_order == 'asc' %} selected {% endif %}>Sort by Name (A-Z)</option>
+                <option value="desc" {% if sort_order == 'desc' %} selected {% endif %}>Sort by Name (Z-A)</option>
+            </select>
+        </form>
+    </div>
+    <div class="upload-section">
+        <form action="/upload_character" method="post" enctype="multipart/form-data">
+            <input type="text" name="character_name" placeholder="Enter Character Name" required>
+            <input type="file" name="file" required>
+            <input type="submit" value="Upload Character">
+        </form>
+        <a href="{{ url_for('upload_characters_excel') }}">
+            Upload Characters by Excel
+        </a>
+    </div>
+</div>
+
+<h2>Uploaded Characters</h2>
+
+<div class="characters-container">
+    {% if characters %}
+    {% for character, image in characters.items() %}
+    <div class="character-item">
+        <img src="{{ image }}" alt="{{ character }}">
+        <p>{{ character }}</p>
+        <div class="button-group">
+            <a href="{{ image }}" target="_blank">View</a>
+            <a href="{{ image }}" download>Download</a>
         </div>
     </div>
+    {% endfor %}
+    {% else %}
+    <p>No characters found.</p>
+    {% endif %}
+</div>
 
-    <h2>Characters</h2>
+<!-- Back to Home Button -->
+<div class="back-home">
+    <a href="/">Back to Home</a>
+</div>
 
-    <div class="masonry-container">
-        {% for character, image in characters.items() %}
-        <div class="character-item">
-            <img src="{{ image }}" alt="{{ character }}">
-            <p>{{ character }}</p>
-            <div class="button-group">
-                <a href="{{ image }}" target="_blank" class="view-btn">
-                    <i class="fas fa-eye"></i>
-                </a>
-                <a href="{{ image }}" download class="download-btn">
-                    <i class="fas fa-download"></i>
-                </a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    <div class="back-home">
-        <a href="/">Back to Home</a>
-    </div>
 </body>
 </html>
