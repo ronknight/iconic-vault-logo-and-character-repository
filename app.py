@@ -1,25 +1,21 @@
 import os
 import json
-import requests
-import time
-import mimetypes  # This helps to detect the file type
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
-import pandas as pd
-from werkzeug.utils import secure_filename
-from urllib.parse import quote
 from dotenv import load_dotenv
+from brandfetch import search_and_download_logo
+from marvel import fetch_marvel_character
+from disney import fetch_disney_character
 
-# Load environment variables from the .env file
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-BRANDFETCH_API_KEY = os.getenv('BRANDFETCH_API_KEY')
-BRANDFETCH_URL = "https://api.brandfetch.io/v2/brands/"
 
+# File paths
 UPLOAD_FOLDER = 'static/logos'
 BRANDS_FILE = 'brands.json'
+CHARACTERS_FILE = 'characters.json'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if not os.path.exists(UPLOAD_FOLDER):
@@ -31,90 +27,67 @@ if os.path.exists(BRANDS_FILE):
 else:
     brands_data = {}
 
-# Function to save uploaded file with its original extension
-def save_uploaded_file(file, brand_name):
-    filename = secure_filename(file.filename)  # Ensure the filename is safe
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(file_path)
+if os.path.exists(CHARACTERS_FILE):
+    with open(CHARACTERS_FILE, 'r') as f:
+        characters_data = json.load(f)
+else:
+    characters_data = {}
+
+# Home route
+@app.route('/')
+def home():
+    return render_template('home.html')
+
+# Brand Logos Route
+@app.route('/logos', methods=['GET'])
+def logos_page():
+    query = request.args.get('q', '')  # Search query for logos
+    sort_order = request.args.get('sort', 'asc')  # Get the sorting order from the query parameters
     
-    # Add the file to the brand's data with its extension
-    brands_data[filename] = brand_name
-    with open(BRANDS_FILE, 'w') as f:
-        json.dump(brands_data, f)
+    if query:
+        filtered_logos = {logo: brand for logo, brand in brands_data.items() if query.lower() in brand.lower()}
+    else:
+        filtered_logos = brands_data
 
-# Brandfetch API function to download logos with correct file extension
-def search_and_download_logo(brand_name, download_path, brand_domain=None):
-    search_term = brand_domain if brand_domain else brand_name
-    try:
-        headers = {'Authorization': f'Bearer {BRANDFETCH_API_KEY}'}
-        url = f"{BRANDFETCH_URL}{quote(search_term)}"
-        response = requests.get(url, headers=headers)
+    # Sort logos based on the selected sort order
+    if sort_order == 'asc':
+        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda item: item[1].lower()))
+    else:
+        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda item: item[1].lower(), reverse=True))
 
-        if response.status_code == 200:
-            data = response.json()
-            if 'logos' in data and len(data['logos']) > 0:
-                logo_url = None
-                # Check for SVG first, otherwise fallback to the first available format
-                for format_data in data['logos'][0]['formats']:
-                    if format_data['format'] == 'svg':
-                        logo_url = format_data['src']
-                        break
-                if not logo_url:
-                    logo_url = data['logos'][0]['formats'][0]['src']
-                
-                # Get the file extension dynamically from the content type
-                ext = mimetypes.guess_extension(requests.head(logo_url).headers.get('content-type'))
-                logo_filename = f"{brand_name}{ext}"
-                logo_path = os.path.join(download_path, logo_filename)
+    return render_template('logos.html', logos=sorted_logos, query=query, sort_order=sort_order)
 
-                # Download the logo
-                img_response = requests.get(logo_url, stream=True)
-                if img_response.status_code == 200:
-                    with open(logo_path, 'wb') as f:
-                        for chunk in img_response.iter_content(1024):
-                            f.write(chunk)
-                    print(f"Logo for {brand_name} downloaded successfully as {logo_filename}.")
-                    return logo_filename
-                else:
-                    print(f"Error downloading logo for {brand_name}: {img_response.status_code}")
-                    return None
-            else:
-                print(f"No logo found for {brand_name}")
-                return None
-        else:
-            print(f"Error searching Brandfetch for {brand_name}: {response.status_code}")
-            return None
-    except Exception as e:
-        print(f"Exception occurred during logo search and download for {brand_name}: {e}")
-        return None
 
-# Serve logo images dynamically based on the actual file extension
-@app.route('/logos/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-# Route to download logos
-@app.route('/download/<filename>')
-def download_logo(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
-
-# Route to upload logos manually
+# Upload brand logos via form
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files or 'brand_name' not in request.form:
         return redirect(request.url)
-    
+
     file = request.files['file']
     brand_name = request.form['brand_name']
-    
+
     if file.filename == '' or brand_name == '':
         return redirect(request.url)
-    
-    # Save the uploaded file with its original format
-    save_uploaded_file(file, brand_name)
-    return redirect(url_for('logos_page'))
 
-# Route to delete logos
+    if file:
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
+        brands_data[file.filename] = brand_name
+        with open(BRANDS_FILE, 'w') as f:
+            json.dump(brands_data, f)
+        return redirect(url_for('logos_page'))
+
+# Serve logo images
+@app.route('/logos/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# Download logo route
+@app.route('/download/<filename>')
+def download_logo(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
+
+# Delete logo route
 @app.route('/delete_logo/<filename>', methods=['POST'])
 def delete_logo(filename):
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -127,19 +100,19 @@ def delete_logo(filename):
         flash(f"Logo '{filename}' deleted successfully.")
     else:
         flash(f"Logo '{filename}' not found.")
-    
+
     return redirect(url_for('logos_page'))
 
-# Excel file upload route
+# Excel file upload for logos
 @app.route('/upload_excel', methods=['GET', 'POST'])
 def upload_excel():
     if request.method == 'POST':
         if 'excel_file' not in request.files:
             flash("No Excel file provided.")
             return redirect(request.url)
-        
+
         excel_file = request.files['excel_file']
-        
+
         if excel_file.filename == '':
             flash("No file selected.")
             return redirect(request.url)
@@ -150,29 +123,27 @@ def upload_excel():
             flash(f"Error reading Excel file: {e}")
             return redirect(request.url)
 
-        # Check if 'Brand' and 'Domain' columns exist
         if 'Brand' not in df.columns or 'Domain' not in df.columns:
             flash("Excel file must have 'Brand' and 'Domain' columns.")
             return redirect(request.url)
 
-        # Process Excel data and handle logos upload
         for index, row in df.iterrows():
             brand_name = row['Brand'].strip()
-            brand_domain = row['Domain'].strip()  # Use domain from the Excel sheet
+            brand_domain = row['Domain'].strip()
 
-            logo_filename = search_and_download_logo(brand_name, app.config['UPLOAD_FOLDER'], brand_domain)
+            logo_filename = f"{brand_name}.svg"
+            logo_path = os.path.join(app.config['UPLOAD_FOLDER'], logo_filename)
 
-            if logo_filename:
-                # Only add to brands_data if the logo was newly downloaded or already exists
-                if logo_filename not in brands_data:
-                    brands_data[logo_filename] = brand_name
-                    print(f"Added logo for {brand_name}")
+            if os.path.exists(logo_path):
+                print(f"Logo already exists for {brand_name}, skipping...")
+                continue
 
-            # Add a 10-second delay between downloads to respect API rate limits
-            print("Waiting 10 seconds before the next download...")
-            time.sleep(10)
+            print(f"Downloading high-resolution logo for {brand_name} using Brandfetch API...")
+            if search_and_download_logo(brand_name, app.config['UPLOAD_FOLDER'], brand_domain):
+                brands_data[logo_filename] = brand_name
+            else:
+                print(f"Failed to download logo for {brand_name}")
 
-        # Save the updated brands data
         with open(BRANDS_FILE, 'w') as f:
             json.dump(brands_data, f)
 
@@ -181,69 +152,74 @@ def upload_excel():
 
     return render_template('upload_excel.html')
 
-# Route for characters.html
-@app.route('/characters')
+# Licensed Characters Route
+@app.route('/characters', methods=['GET', 'POST'])
 def characters_page():
-    return render_template('characters.html')
-
-# Route for download_results.html
-@app.route('/download_results')
-def download_results_page():
-    return render_template('download_results.html')
-
-# Route for home.html
-@app.route('/home')
-def home_page():
-    return render_template('home.html')
-
-# Route for index.html (set as home route)
-@app.route('/')
-def index_page():
-    query = request.args.get('q', '')  # Search query for logos
-    sort_order = request.args.get('sort', 'asc')  # Sort order (asc or desc)
-    logos = os.listdir(app.config['UPLOAD_FOLDER'])
-
-    # Filter logos based on search query
+    query = request.args.get('character_search', '').strip()  # Search query for characters
+    character = None
     if query:
-        filtered_logos = {logo: brand for logo, brand in brands_data.items() if query.lower() in brand.lower()}
+        # First try fetching Disney character, then fall back to Marvel character
+        character = fetch_disney_character(query) or fetch_marvel_character(query)
+
+    if character:
+        # Add to character repository if not already there
+        if character['name'] not in characters_data:
+            characters_data[character['name']] = character['image']
+            with open(CHARACTERS_FILE, 'w') as f:
+                json.dump(characters_data, f)
+        flash(f"Found and saved character: {character['name']}")
     else:
-        filtered_logos = brands_data
+        flash(f"No character found for: {query}")
 
-    # Sort the filtered logos by brand name based on the selected order
-    if sort_order == 'asc':
-        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda x: x[1].lower()))
-    elif sort_order == 'desc':
-        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda x: x[1].lower(), reverse=True))
+    return render_template('characters.html', characters=characters_data)
 
-    return render_template('index.html', logos=sorted_logos, query=query, sort_order=sort_order)
+# Excel file upload for characters
+@app.route('/upload_characters_excel', methods=['GET', 'POST'])
+def upload_characters_excel():
+    if request.method == 'POST':
+        if 'excel_file' not in request.files:
+            flash("No Excel file provided.")
+            return redirect(request.url)
 
+        excel_file = request.files['excel_file']
 
-# Route for logos.html
-@app.route('/logos')
-def logos_page():
-    query = request.args.get('q', '')  # Search query for logos
-    sort_order = request.args.get('sort', 'asc')  # Sort order (asc or desc)
-    logos = os.listdir(app.config['UPLOAD_FOLDER'])
-    
-    # Filter logos based on search query
-    if query:
-        filtered_logos = {logo: brand for logo, brand in brands_data.items() if query.lower() in brand.lower()}
-    else:
-        filtered_logos = brands_data
+        if excel_file.filename == '':
+            flash("No file selected.")
+            return redirect(request.url)
 
-    # Sort the filtered logos by brand name based on the selected order
-    if sort_order == 'asc':
-        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda x: x[1].lower()))
-    elif sort_order == 'desc':
-        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda x: x[1].lower(), reverse=True))
+        try:
+            df = pd.read_excel(excel_file)
+        except Exception as e:
+            flash(f"Error reading Excel file: {e}")
+            return redirect(request.url)
 
-    return render_template('logos.html', logos=sorted_logos, query=query, sort_order=sort_order)
+        if 'Character' not in df.columns or 'Image' not in df.columns:
+            flash("Excel file must have 'Character' and 'Image' columns.")
+            return redirect(request.url)
 
+        for index, row in df.iterrows():
+            character_name = row['Character'].strip()
+            image_url = row['Image'].strip()
 
-# Route for match_results.html
-@app.route('/match_results')
-def match_results_page():
-    return render_template('match_results.html')
+            if character_name in characters_data:
+                print(f"Character {character_name} already exists, skipping...")
+                continue
+
+            characters_data[character_name] = image_url
+            print(f"Added {character_name} to the character repository.")
+
+        with open(CHARACTERS_FILE, 'w') as f:
+            json.dump(characters_data, f)
+
+        flash("Characters processed successfully from Excel file.")
+        return redirect(url_for('characters_page'))
+
+    return render_template('upload_characters_excel.html')
+
+# Download app.py file
+@app.route('/download_app')
+def download_app():
+    return send_from_directory(app.root_path, 'app.py', as_attachment=True)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

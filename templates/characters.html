@@ -3,56 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Licensed Characters</title>
+    <title>Licensed Characters Repository</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            background-color: #f0f2f5;
         }
         h1, h2 {
             text-align: center;
+            margin-bottom: 30px;
         }
-        .character-container {
+        .header-container {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .search-container form {
+            display: flex;
             justify-content: center;
-            margin-top: 20px;
+            align-items: center;
+        }
+        .search-container input[type="text"] {
+            padding: 10px;
+            width: 300px;
+            font-size: 16px;
+            border: 2px solid #007BFF;
+            border-radius: 8px;
+            outline: none;
+            margin-right: 10px;
+        }
+        .search-container input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .masonry-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-gap: 20px;
         }
         .character-item {
-            margin: 20px;
-            text-align: center;
-        }
-        .character-item img {
-            max-width: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 10px;
-            background-color: #f9f9f9;
-        }
-        .search-container {
+            background-color: #ffffff;
             text-align: center;
-            margin-bottom: 20px;
+            height: 300px;
+        }
+        .character-item img {
+            max-width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+            display: block;
+            flex-grow: 1;
+        }
+        .character-item p {
+            margin-top: 10px;
+            margin-bottom: 0;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .button-group {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        .button-group button, .button-group a {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .button-group .view-btn {
+            background-color: #007BFF;
+        }
+        .button-group .download-btn {
+            background-color: #28A745;
+        }
+        .button-group .delete-btn {
+            background-color: #DC3545;
+        }
+        .back-home {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .back-home a {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
         }
     </style>
 </head>
 <body>
-    <h1>Licensed Disney Characters</h1>
+    <h1>Licensed Characters Repository</h1>
 
-    <div class="search-container">
-        <form method="get" action="/characters">
-            <input type="text" name="character_search" value="" placeholder="Search for a Disney character...">
-            <input type="submit" value="Search Characters">
-        </form>
+    <div class="header-container">
+        <div class="search-container">
+            <form method="get" action="/characters">
+                <input type="text" name="character_search" placeholder="Search for a character...">
+                <input type="submit" value="Search">
+            </form>
+        </div>
     </div>
 
-    <div class="character-container">
-        {% for character in characters %}
+    <h2>Characters</h2>
+
+    <div class="masonry-container">
+        {% for character, image in characters.items() %}
         <div class="character-item">
-            <img src="{{ character.imageUrl }}" alt="{{ character.name }}">
-            <p>{{ character.name }}</p>
+            <img src="{{ image }}" alt="{{ character }}">
+            <p>{{ character }}</p>
+            <div class="button-group">
+                <a href="{{ image }}" target="_blank" class="view-btn">
+                    <i class="fas fa-eye"></i>
+                </a>
+                <a href="{{ image }}" download class="download-btn">
+                    <i class="fas fa-download"></i>
+                </a>
+            </div>
         </div>
         {% endfor %}
     </div>
 
+    <div class="back-home">
+        <a href="/">Back to Home</a>
+    </div>
 </body>
 </html>

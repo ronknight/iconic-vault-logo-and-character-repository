@@ -9,37 +9,136 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            background-color: #f0f2f5;
         }
+
         h1, h2 {
             text-align: center;
+            margin-bottom: 30px;
         }
-        .logo-container {
+
+        .header-container {
             display: flex;
-            flex-wrap: wrap;
             justify-content: center;
-            margin-top: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 20px; /* Space between the elements */
         }
+
+        /* Search Form */
+        .search-container form {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-container input[type="text"] {
+            padding: 10px;
+            width: 250px;
+            font-size: 16px;
+            border: 2px solid #007BFF;
+            border-radius: 8px;
+            outline: none;
+            margin-right: 10px;
+        }
+
+        .search-container input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .search-container input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        /* Sort dropdown */
+        .sort-container select {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #28A745;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .sort-container select:focus {
+            outline: none;
+            border-color: #1e7e34;
+        }
+
+        /* Upload Section */
+        .upload-section form input[type="file"], .upload-section form input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #007BFF;
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+
+        .upload-section form input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #28A745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .upload-section form input[type="submit"]:hover {
+            background-color: #1e7e34;
+        }
+
+        /* Excel Upload Button */
+        .excel-btn {
+            padding: 10px 20px;
+            background-color: #17a2b8;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .excel-btn:hover {
+            background-color: #138496;
+        }
+
+        /* Masonry Container */
+        .logo-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Responsive columns */
+            grid-gap: 20px;
+        }
+
         .logo-item {
-            margin: 20px;
-            text-align: center;
-        }
-        .logo-item img, .logo-item object {
-            max-width: 200px;
-            max-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 10px;
-            background-color: #f9f9f9;
-        }
-        .search-container {
+            background-color: #ffffff;
             text-align: center;
-            margin-bottom: 20px;
+            height: 300px;
         }
+
+        .logo-item img {
+            max-width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+        }
+
         .button-group {
             display: flex;
             justify-content: space-around;
             margin-top: 10px;
         }
+
         .button-group button, .button-group a {
             width: 32px;
             height: 32px;
@@ -53,25 +152,33 @@
             align-items: center;
             justify-content: center;
         }
+
         .button-group .view-btn {
             background-color: #007BFF;
         }
+
         .button-group .download-btn {
             background-color: #28A745;
         }
+
         .button-group .delete-btn {
             background-color: #DC3545;
         }
+
         .button-group button:hover, .button-group a:hover {
             opacity: 0.9;
         }
+
         .button-group i {
             font-size: 10px;
         }
+
+        /* Back to Home Button */
         .back-home {
             text-align: center;
             margin-top: 40px;
         }
+
         .back-home a {
             padding: 10px 20px;
             background-color: #007BFF;
@@ -79,6 +186,7 @@
             text-decoration: none;
             border-radius: 8px;
         }
+
         .back-home a:hover {
             background-color: #0056b3;
         }
@@ -87,53 +195,46 @@
 <body>
     <h1>Brand Logo Repository</h1>
 
-    <!-- Back to Home Button -->
-    <div class="back-home">
-        <a href="/">Back to Home</a>
-    </div>
+    <!-- Header Section with Search, Excel Upload, and Sort -->
+    <div class="header-container">
+        <div class="search-container">
+            <form method="get" action="/logos">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search for a brand...">
+                <input type="submit" value="Search">
+            </form>
+        </div>
 
-    <!-- Search Form -->
-    <div class="search-container">
-        <form method="get" action="/logos">
-            <input type="text" name="q" value="{{ query }}" placeholder="Search for a brand...">
-            <input type="submit" value="Search">
-        </form>
-    </div>
+        <!-- Sort Dropdown -->
+        <div class="sort-container">
+            <form method="get" action="/logos">
+                <select name="sort" onchange="this.form.submit()">
+                    <option value="asc" {% if sort_order == 'asc' %} selected {% endif %}>Sort by Name (A-Z)</option>
+                    <option value="desc" {% if sort_order == 'desc' %} selected {% endif %}>Sort by Name (Z-A)</option>
+                </select>
+            </form>
+        </div>
 
-    <!-- Upload Section -->
-    <div class="upload-section">
-        <form action="/upload" method="post" enctype="multipart/form-data" style="margin-bottom: 20px;">
-            <div>
+        <!-- Manual Upload Section -->
+        <div class="upload-section">
+            <form action="/upload" method="post" enctype="multipart/form-data">
                 <input type="text" name="brand_name" placeholder="Enter Brand Name" required>
                 <input type="file" name="file" required>
                 <input type="submit" value="Upload Logo">
-            </div>
-        </form>
-        <a href="{{ url_for('upload_excel') }}" style="background-color: #17a2b8; padding: 10px 20px; color: white; border-radius: 5px; text-decoration: none;">
+            </form>
+        </div>
+
+        <!-- Excel Upload Button -->
+        <a href="{{ url_for('upload_excel') }}" class="excel-btn">
             <i class="fas fa-file-excel"></i> Upload Logos by Excel
         </a>
     </div>
 
     <h2>Uploaded Logos</h2>
-    <!-- Sort Options -->
-    <div class="sort-container" style="text-align: center; margin-bottom: 20px;">
-        <a href="?sort=asc" style="background-color: #007BFF; padding: 10px 20px; color: white; border-radius: 5px; text-decoration: none;">
-            Sort Ascending <i class="fas fa-sort-alpha-down"></i>
-        </a>
-        <a href="?sort=desc" style="background-color: #28A745; padding: 10px 20px; color: white; border-radius: 5px; text-decoration: none;">
-            Sort Descending <i class="fas fa-sort-alpha-down-alt"></i>
-        </a>
-    </div>
 
     <div class="logo-container">
         {% for logo, brand in logos.items() %}
         <div class="logo-item">
-            <!-- Detect file type and render appropriately -->
-            {% if logo.endswith('.svg') %}
-                <object type="image/svg+xml" data="{{ url_for('uploaded_file', filename=logo) }}" class="logo"></object>
-            {% else %}
-                <img src="{{ url_for('uploaded_file', filename=logo) }}" alt="{{ brand }}" class="logo">
-            {% endif %}
+            <img src="{{ url_for('uploaded_file', filename=logo) }}" alt="{{ brand }}">
             <p>{{ brand }}</p>
             <div class="button-group">
                 <a href="{{ url_for('uploaded_file', filename=logo) }}" target="_blank" class="view-btn">
@@ -150,6 +251,11 @@
             </div>
         </div>
         {% endfor %}
-    </div>    
+    </div>
+
+    <!-- Back to Home Button -->
+    <div class="back-home">
+        <a href="/">Back to Home</a>
+    </div>
 </body>
 </html>
