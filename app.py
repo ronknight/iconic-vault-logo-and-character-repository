@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from brandfetch import search_and_download_logo
 from marvel import fetch_marvel_character
 from disney import fetch_disney_character
+import pandas as pd
 
 # Load environment variables
 load_dotenv()
@@ -16,7 +17,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 # File paths
 UPLOAD_FOLDER = 'static/logos'
-CHARACTERS_FOLDER = 'static/characters'  # Add characters folder for images
+CHARACTERS_FOLDER = 'static/characters'
 BRANDS_FILE = 'brands.json'
 CHARACTERS_FILE = 'characters.json'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -43,15 +44,12 @@ else:
 # Function to download and save character images
 def download_image(image_url, character_name):
     try:
-        # Extract file extension from the URL
         parsed_url = urlparse(image_url)
         file_extension = os.path.splitext(parsed_url.path)[1]
 
-        # Set the local filename
         filename = f"{character_name.replace(' ', '_')}{file_extension}"
         file_path = os.path.join(CHARACTERS_FOLDER, filename)
 
-        # Check if the file already exists
         if not os.path.exists(file_path):
             response = requests.get(image_url)
             if response.status_code == 200:
@@ -59,7 +57,7 @@ def download_image(image_url, character_name):
                     f.write(response.content)
             else:
                 print(f"Failed to download image for {character_name}: {response.status_code}")
-        return filename  # Return the filename to save it in JSON
+        return filename
     except Exception as e:
         print(f"Error downloading image for {character_name}: {e}")
         return None
@@ -72,15 +70,14 @@ def home():
 # Brand Logos Route
 @app.route('/logos', methods=['GET'])
 def logos_page():
-    query = request.args.get('q', '')  # Search query for logos
-    sort_order = request.args.get('sort', 'asc')  # Get the sorting order from the query parameters
+    query = request.args.get('q', '')
+    sort_order = request.args.get('sort', 'asc')
     
     if query:
         filtered_logos = {logo: brand for logo, brand in brands_data.items() if query.lower() in brand.lower()}
     else:
         filtered_logos = brands_data
 
-    # Sort logos based on the selected sort order
     if sort_order == 'asc':
         sorted_logos = dict(sorted(filtered_logos.items(), key=lambda item: item[1].lower()))
     else:
@@ -185,31 +182,56 @@ def upload_excel():
 # Licensed Characters Route
 @app.route('/characters', methods=['GET', 'POST'])
 def characters_page():
-    query = request.args.get('character_search', '')  # Search query for characters
-    if query:
-        # Fetch from Disney and Marvel APIs based on query
-        disney_characters = fetch_disney_character(query)
-        marvel_characters = fetch_marvel_character(query)
+    api_query = request.args.get('character_search', '')  
+    local_query = request.args.get('local_search', '')   
+    api_search_results = {}
+    combined_characters = characters_data  
 
-        # Combine the results and download the images
-        combined_characters = {}
-        for character, image_url in {**disney_characters, **marvel_characters}.items():
-            local_image_filename = download_image(image_url, character)
-            if local_image_filename:
-                combined_characters[character] = os.path.join(CHARACTERS_FOLDER, local_image_filename)
+    if api_query:
+        disney_characters = {}
+        marvel_characters = {}
 
-        # Save the fetched characters to the characters_data and write to JSON file
-        characters_data.update(combined_characters)
-        with open(CHARACTERS_FILE, 'w') as f:
-            json.dump(characters_data, f)
-    else:
-        combined_characters = characters_data  # Default loaded from local storage
+        try:
+            disney_characters = fetch_disney_character(api_query)
+        except Exception as e:
+            print(f"Error fetching Disney characters: {e}")
 
-    # Sorting functionality
+        try:
+            marvel_characters = fetch_marvel_character(api_query)
+        except Exception as e:
+            print(f"Error fetching Marvel characters: {e}")
+
+        api_search_results = {**disney_characters, **marvel_characters}
+
+    if local_query:
+        combined_characters = {character: image for character, image in characters_data.items() if local_query.lower() in character.lower()}
+
     sort_order = request.args.get('sort', 'asc')
     sorted_characters = dict(sorted(combined_characters.items(), key=lambda item: item[0].lower(), reverse=(sort_order == 'desc')))
 
-    return render_template('characters.html', characters=sorted_characters, query=query, sort_order=sort_order)
+    return render_template('characters.html', 
+                           characters=sorted_characters, 
+                           search_results=api_search_results, 
+                           query=api_query, 
+                           sort_order=sort_order, 
+                           local_search=local_query)
+
+@app.route('/add_character', methods=['POST'])
+def add_character():
+    character_name = request.form['character_name']
+    image_url = request.form['image_url']
+
+    local_image_filename = download_image(image_url, character_name)
+
+    if local_image_filename:
+        characters_data[character_name] = os.path.join(CHARACTERS_FOLDER, local_image_filename)
+        with open(CHARACTERS_FILE, 'w') as f:
+            json.dump(characters_data, f)
+        flash(f"Character '{character_name}' added successfully.")
+    else:
+        flash(f"Failed to add character '{character_name}'.")
+
+    return redirect(url_for('characters_page'))
 
 @app.route('/delete_character/<character_name>', methods=['POST'])
 def delete_character(character_name):

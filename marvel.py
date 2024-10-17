@@ -7,13 +7,13 @@ from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
 from dotenv import load_dotenv
 
-
 # Load environment variables from the .env file
 load_dotenv()
 
 MARVEL_PUBLIC_KEY = os.getenv('MARVEL_PUBLIC_KEY')
 MARVEL_PRIVATE_KEY = os.getenv('MARVEL_PRIVATE_KEY')
 
+# Custom adapter to handle SSL issues
 class TLSAdapter(HTTPAdapter):
     def init_poolmanager(self, *args, **kwargs):
         context = ssl.create_default_context()
@@ -21,15 +21,18 @@ class TLSAdapter(HTTPAdapter):
         kwargs['ssl_context'] = context
         return super(TLSAdapter, self).init_poolmanager(*args, **kwargs)
 
+# Set up a session with the custom TLS adapter
 session = requests.Session()
 session.mount('https://', TLSAdapter())
 
+# Function to fetch Marvel character details by name
 def fetch_marvel_character(character_name):
     try:
         ts = str(time.time())
         hash_input = f"{ts}{MARVEL_PRIVATE_KEY}{MARVEL_PUBLIC_KEY}"
         hash_result = hashlib.md5(hash_input.encode()).hexdigest()
 
+        # Marvel API URL for searching characters by name
         search_url = f"https://gateway.marvel.com/v1/public/characters?name={character_name}&apikey={MARVEL_PUBLIC_KEY}&ts={ts}&hash={hash_result}"
         search_response = session.get(search_url)  # Use custom session with SSL context
 
@@ -37,6 +40,7 @@ def fetch_marvel_character(character_name):
             search_results = search_response.json().get('data', {}).get('results', [])
             if search_results:
                 character_id = search_results[0]['id']
+                # Fetch character details
                 detail_url = f"https://gateway.marvel.com/v1/public/characters/{character_id}?apikey={MARVEL_PUBLIC_KEY}&ts={ts}&hash={hash_result}"
                 detail_response = session.get(detail_url)
 

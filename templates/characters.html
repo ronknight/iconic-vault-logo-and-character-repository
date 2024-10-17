@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Licensed Characters Repository</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -124,6 +125,9 @@
         .button-group .delete-btn {
             background-color: #DC3545;
         }
+        .button-group .add-btn {
+            background-color: #28A745;
+        }
         .button-group button:hover,
         .button-group a:hover {
             opacity: 0.9;
@@ -152,12 +156,23 @@
 <h1>Licensed Characters Repository</h1>
 
 <div class="header-container">
+    <!-- API Search -->
     <div class="search-container">
         <form method="get" action="/characters">
-            <input type="text" name="character_search" value="{{ query }}" placeholder="Search for a character...">
-            <input type="submit" value="Search">
+            <input type="text" name="character_search" value="{{ query }}" placeholder="Search for a character from API...">
+            <input type="submit" value="Search API">
         </form>
     </div>
+    
+    <!-- Local Search -->
+    <div class="search-container">
+        <form method="get" action="/characters">
+            <input type="text" name="local_search" value="{{ local_search }}" placeholder="Search saved characters...">
+            <input type="submit" value="Search Local">
+        </form>
+    </div>
+
+    <!-- Sorting Option -->
     <div class="sort-container">
         <form method="get" action="/characters">
             <select name="sort" onchange="this.form.submit()">
@@ -166,6 +181,8 @@
             </select>
         </form>
     </div>
+
+    <!-- Upload Section -->
     <div class="upload-section">
         <form action="/upload_character" method="post" enctype="multipart/form-data">
             <input type="text" name="character_name" placeholder="Enter Character Name" required>
@@ -178,6 +195,31 @@
     </div>
 </div>
 
+<!-- Display API Search Results -->
+<h2>Search Results from API</h2>
+<div class="characters-container">
+    {% if search_results %}
+    {% for character, image in search_results.items() %}
+    <div class="character-item">
+        <img src="{{ image }}" alt="{{ character }}">
+        <p>{{ character }}</p>
+        <div class="button-group">
+            <form action="{{ url_for('add_character') }}" method="POST" style="display:inline;">
+                <input type="hidden" name="character_name" value="{{ character }}">
+                <input type="hidden" name="image_url" value="{{ image }}">
+                <button type="submit" class="add-btn" style="background-color: #28A745; padding: 10px;">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>No search results found.</p>
+    {% endif %}
+</div>
+
+<!-- Display Saved Characters -->
 <h2>Uploaded Characters</h2>
 
 <div class="characters-container">
