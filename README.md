@@ -39,6 +39,13 @@ The repository includes the following key files and directories:
 - `characters/`: A collection of character illustrations in vector and raster formats.
 - `README.md`: Documentation of the repository.
 - `LICENSE`: The repository's license (MIT).
+- `app.py`: The main Flask application that handles routes, API calls, and data processing.
+- `brandfetch.py`: Functions to interact with Brandfetch API for fetching logos.
+- `marvel.py`: Functions to interact with the Marvel API for fetching character information.
+- `disney.py`: Functions to interact with the Disney API for fetching character information.
+- `brands.json`: JSON file for storing metadata of uploaded logos.
+- `characters.json`: JSON file for storing metadata of uploaded characters.
+- `templates/`: Contains HTML templates for the web application UI.
 
 ## ⚙️ Installation
 
@@ -53,34 +60,68 @@ To use the assets in this repository, follow these steps:
    cd iconic-vault-logo-and-character-repository
    ```
 
-3. You can now use the logos and character assets in your own projects.
+3. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Set up environment variables by creating a `.env` file with the following content:
+   ```
+   SECRET_KEY=your_secret_key
+   MARVEL_PUBLIC_KEY=your_marvel_public_key
+   MARVEL_PRIVATE_KEY=your_marvel_private_key
+   ```
+
+5. Run the Flask application:
+   ```bash
+   python app.py
+   ```
+
+6. Open the app in your browser at `http://localhost:5000`.
 
 ## 🚀 Usage
 
-1. Choose the desired asset from the `logos` or `characters` directory.
-2. Copy the asset to your project folder.
-3. Integrate the asset into your design or development project.
+### Managing Logos
+1. Navigate to `/logos` to manage brand logos.
+2. Upload a logo manually or via an Excel file.
+3. Search for logos, download, or delete them.
 
-Example usage of an SVG logo in an HTML file:
-```html
-<img src="logos/awesome-logo.svg" alt="Awesome Logo">
-```
+### Managing Characters
+1. Navigate to `/characters` to manage licensed characters.
+2. Search characters from Disney or Marvel API.
+3. Add characters to the repository or manage saved characters.
 
 ## 📜 Application Functions
 
-The `app.py` file contains key functionalities for managing the logos in this repository. Here's a summary of the main functions:
+### `app.py`
+This is the main file that contains routes and logic for handling logo and character management.
 
-1. **File Handling Functions**:
-    - `save_uploaded_file(file, brand_name)`: Saves an uploaded file and updates the brand data.
-    - `search_and_download_logo(brand_name, download_path, brand_domain=None)`: Uses Brandfetch API to download logos for a brand.
-    - `uploaded_file(filename)`: Serves the requested logo image.
-    - `download_logo(filename)`: Provides a downloadable version of the logo.
-    - `delete_logo(filename)`: Deletes a logo file and updates the brand list.
+- **Key Functions**:
+    - `download_image(image_url, character_name)`: Downloads an image of a logo or character and stores it in the appropriate folder.
+    - `logos_page()`: Displays the page for managing brand logos.
+    - `characters_page()`: Handles searching for characters via Disney and Marvel APIs, and managing existing characters in the repository.
+    - `add_character()`: Adds a character from the search results to the repository.
+    - `delete_character()`: Deletes a character from the repository.
+    - `upload_excel()`: Processes an Excel file to bulk upload brand logos.
+    - `upload_characters_excel()`: Processes an Excel file to bulk upload characters.
 
-2. **Route Functions**:
-    - `upload_file()`: Handles manual logo uploads.
-    - `upload_excel()`: Processes an Excel file with brand names and domains to bulk download logos.
-    - `index_page()`, `logos_page()`, `characters_page()`: Serve various pages for the web interface.
+### `marvel.py`
+This file contains functions to interact with the Marvel API.
+
+- **Key Functions**:
+    - `fetch_marvel_character(character_name)`: Fetches character data from Marvel based on the character's name.
+
+### `disney.py`
+This file contains functions to interact with the Disney API.
+
+- **Key Functions**:
+    - `fetch_disney_character(character_name)`: Fetches character data from Disney based on the character's name.
+
+### `brandfetch.py`
+This file interacts with the Brandfetch API to download logos.
+
+- **Key Functions**:
+    - `search_and_download_logo(brand_name, download_path, brand_domain)`: Searches for and downloads a high-quality logo for a brand.
 
 ## 📊 Visualization
 
