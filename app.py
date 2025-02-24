@@ -5,9 +5,10 @@ from urllib.parse import urlparse
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
 from dotenv import load_dotenv
 from brandfetch import search_and_download_logo
-from marvel import fetch_marvel_character
-from disney import fetch_disney_character
 import pandas as pd
+from apis.disney_api import fetch_disney_character
+from apis.marvel_api import fetch_marvel_character
+from apis.fandom_api import fetch_fandom_character
 
 # Load environment variables
 load_dotenv()
@@ -184,37 +185,32 @@ def upload_excel():
 def characters_page():
     api_query = request.args.get('character_search', '')  
     local_query = request.args.get('local_search', '')   
-    api_search_results = {}
+    api_search_results = []  # Changed to list for formatted results
     combined_characters = characters_data  
 
     if api_query:
-        disney_characters = {}
-        marvel_characters = {}
-
         try:
-            disney_characters = fetch_disney_character(api_query)
+            # Use the search_characters function to get results from all APIs
+            api_search_results = search_characters(api_query)
         except Exception as e:
-            print(f"Error fetching Disney characters: {e}")
-
-        try:
-            marvel_characters = fetch_marvel_character(api_query)
-        except Exception as e:
-            print(f"Error fetching Marvel characters: {e}")
-
-        api_search_results = {**disney_characters, **marvel_characters}
+            print(f"Error fetching characters: {e}")
+            flash("Error fetching characters from APIs")
 
     if local_query:
-        combined_characters = {character: image for character, image in characters_data.items() if local_query.lower() in character.lower()}
+        combined_characters = {character: image for character, image in characters_data.items() 
+                             if local_query.lower() in character.lower()}
 
     sort_order = request.args.get('sort', 'asc')
-    sorted_characters = dict(sorted(combined_characters.items(), key=lambda item: item[0].lower(), reverse=(sort_order == 'desc')))
+    sorted_characters = dict(sorted(combined_characters.items(), 
+                                  key=lambda item: item[0].lower(), 
+                                  reverse=(sort_order == 'desc')))
 
     return render_template('characters.html', 
-                           characters=sorted_characters, 
-                           search_results=api_search_results, 
-                           query=api_query, 
-                           sort_order=sort_order, 
-                           local_search=local_query)
+                         characters=sorted_characters, 
+                         search_results=api_search_results, 
+                         query=api_query, 
+                         sort_order=sort_order, 
+                         local_search=local_query)
 
 @app.route('/add_character', methods=['POST'])
 def add_character():
@@ -293,6 +289,27 @@ def upload_characters_excel():
 @app.route('/download_app')
 def download_app():
     return send_from_directory(app.root_path, 'app.py', as_attachment=True)
+
+def search_characters(query):
+    results = []
+    
+    # Get results from each API
+    disney_results = fetch_disney_character(query)
+    marvel_results = fetch_marvel_character(query)
+    fandom_results = fetch_fandom_character(query)
+    
+    # Now each API is expected to return a list of dictionaries.
+    for api_results in [disney_results, marvel_results, fandom_results]:
+        if isinstance(api_results, list):
+            # Each result should be a dict with keys 'name', 'image', and 'source'
+            for result in api_results:
+                # Sanity-check that result is a dict
+                if isinstance(result, dict):
+                    results.append(result)
+        elif isinstance(api_results, dict):
+            results.append(api_results)
+    
+    return results
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

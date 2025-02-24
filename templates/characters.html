@@ -149,6 +149,22 @@
         .back-home a:hover {
             background-color: #0056b3;
         }
+        .api-source {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 5px;
+            gap: 5px;
+        }
+        .api-icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+        .api-label {
+            font-size: 12px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -159,8 +175,8 @@
     <!-- API Search -->
     <div class="search-container">
         <form method="get" action="/characters">
-            <input type="text" name="character_search" value="{{ query }}" placeholder="Search for a character from API...">
-            <input type="submit" value="Search API">
+            <input type="text" name="character_search" value="{{ query }}" placeholder="Search characters (Disney/Marvel/Fandom)...">
+            <input type="submit" value="Search APIs">
         </form>
     </div>
     
@@ -196,17 +212,30 @@
 </div>
 
 <!-- Display API Search Results -->
-<h2>Search Results from API</h2>
+<h2>Search Results from APIs</h2>
 <div class="characters-container">
     {% if search_results %}
-    {% for character, image in search_results.items() %}
+    {% for character in search_results %}
     <div class="character-item">
-        <img src="{{ image }}" alt="{{ character }}">
-        <p>{{ character }}</p>
+        <img src="{{ character.image }}" alt="{{ character.name }}">
+        <p>{{ character.name }}</p>
+        <div class="api-source">
+            {% if character.source == 'disney' %}
+            <img src="/static/images/disney-icon.png" alt="Disney" class="api-icon">
+            <span class="api-label">Disney</span>
+            {% elif character.source == 'marvel' %}
+            <img src="/static/images/marvel-icon.png" alt="Marvel" class="api-icon">
+            <span class="api-label">Marvel</span>
+            {% elif character.source == 'fandom' %}
+            <img src="/static/images/fandom-icon.png" alt="Fandom" class="api-icon">
+            <span class="api-label">Fandom</span>
+            {% endif %}
+        </div>
         <div class="button-group">
             <form action="{{ url_for('add_character') }}" method="POST" style="display:inline;">
-                <input type="hidden" name="character_name" value="{{ character }}">
-                <input type="hidden" name="image_url" value="{{ image }}">
+                <input type="hidden" name="character_name" value="{{ character.name }}">
+                <input type="hidden" name="image_url" value="{{ character.image }}">
+                <input type="hidden" name="source" value="{{ character.source }}">
                 <button type="submit" class="add-btn" style="background-color: #28A745; padding: 10px;">
                     <i class="fas fa-plus"></i>
                 </button>

@@ -1,1 +1,7 @@
 .env
+__pycache__/brandfetch.cpython-312.pyc
+__pycache__/disney.cpython-312.pyc
+__pycache__/marvel.cpython-312.pyc
+static/characters/*.*
+static/images/*.*
+static/logos/*.*
