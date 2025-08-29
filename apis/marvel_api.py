@@ -27,8 +27,25 @@ class TLSAdapter(HTTPAdapter):
 # Create a session with our custom TLS adapter
 session = requests.Session()
 session.mount('https://', TLSAdapter())
+session.headers.update({'User-Agent': 'IconicVault/1.0'})
+DEFAULT_TIMEOUT = 20
 
 # Function to fetch Marvel character details by name
+def _variant_url(thumbnail: dict, variant: str = 'portrait_uncanny') -> str:
+    try:
+        path = thumbnail.get('path', '')
+        ext = thumbnail.get('extension', 'jpg')
+        if not path:
+            return ''
+        # Ensure https
+        if path.startswith('http://'):
+            path = 'https://' + path[len('http://'):]
+        # Build variant URL
+        return f"{path}/{variant}.{ext}"
+    except Exception:
+        return ''
+
+
 def fetch_marvel_character(character_name):
     try:
         ts = str(time.time())
@@ -36,13 +53,14 @@ def fetch_marvel_character(character_name):
         hash_result = hashlib.md5(hash_input.encode()).hexdigest()
         
         base_url = "https://gateway.marvel.com/v1/public/characters"
-        params = {
+        params_exact = {
             "name": character_name,
             "ts": ts,
             "apikey": MARVEL_PUBLIC_KEY,
             "hash": hash_result
         }
-        response = session.get(base_url, params=params)
+        # First try exact match
+        response = session.get(base_url, params=params_exact, timeout=DEFAULT_TIMEOUT)
         if response.status_code != 200:
             print(f"Marvel API error: {response.status_code}")
             return []
@@ -52,9 +70,46 @@ def fetch_marvel_character(character_name):
         results_list = data.get("results", [])
         results = []
         for character in results_list:
-            thumbnail = character.get("thumbnail")
-            if thumbnail and thumbnail.get("path") and thumbnail.get("extension"):
-                image_url = f"{thumbnail.get('path')}.{thumbnail.get('extension')}"
+            thumbnail = character.get("thumbnail") or {}
+            path = thumbnail.get('path', '')
+            # Skip placeholders
+            if not path or 'image_not_available' in path:
+                continue
+            image_url = _variant_url(thumbnail, 'portrait_uncanny')
+            if not image_url:
+                # Fallback to standard_large
+                image_url = _variant_url(thumbnail, 'standard_large')
+            if image_url:
+                results.append({
+                    "name": character.get("name"),
+                    "image": image_url,
+                    "source": "marvel"
+                })
+
+        if results:
+            return results
+
+        # Fallback: broader search by prefix if exact name produced nothing
+        params_prefix = {
+            "nameStartsWith": character_name,
+            "ts": ts,
+            "apikey": MARVEL_PUBLIC_KEY,
+            "hash": hash_result
+        }
+        response = session.get(base_url, params=params_prefix, timeout=DEFAULT_TIMEOUT)
+        if response.status_code != 200:
+            print(f"Marvel API error (prefix): {response.status_code}")
+            return []
+        json_data = response.json()
+        data = json_data.get("data", {})
+        results_list = data.get("results", [])
+        for character in results_list:
+            thumbnail = character.get("thumbnail") or {}
+            path = thumbnail.get('path', '')
+            if not path or 'image_not_available' in path:
+                continue
+            image_url = _variant_url(thumbnail, 'portrait_uncanny') or _variant_url(thumbnail, 'standard_large')
+            if image_url:
                 results.append({
                     "name": character.get("name"),
                     "image": image_url,

@@ -1,46 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Downloaded Logos</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .logo-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .logo-item {
-            margin: 20px;
-            text-align: center;
-        }
-        .logo-item img {
-            max-width: 200px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            background-color: #f9f9f9;
-        }
-    </style>
-</head>
-<body>
-    <h1>Downloaded Logos</h1>
-    <div class="logo-container">
-        {% if logos %}
-            {% for brand, url in logos.items() %}
-            <div class="logo-item">
-                <img src="{{ url }}" alt="{{ brand }}">
-                <p>{{ brand }}</p>
-            </div>
-            {% endfor %}
-        {% else %}
-            <p>No logos were downloaded.</p>
-        {% endif %}
-    </div>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Downloaded Logos · Iconic Vault{% endblock %}
+{% block content %}
+  <h1 style="margin:12px 0 16px 0;font-size:22px">Downloaded Logos</h1>
+  <div class="panel">
+    {% if logos %}
+      <div class="grid">
+        {% for brand, url in logos.items() %}
+        <div class="card" title="{{ brand }}">
+          <div class="thumb"><img src="{{ url }}" alt="{{ brand }}"></div>
+          <div class="brandname">{{ brand }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">No logos were downloaded.</div>
+    {% endif %}
+    <div class="meta"><a class="link" href="{{ url_for('logos_page') }}">Back to Logos</a></div>
+  </div>
+{% endblock %}

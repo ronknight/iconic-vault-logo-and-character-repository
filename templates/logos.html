@@ -1,261 +1,205 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brand Logo Repository</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f0f2f5;
-        }
-
-        h1, h2 {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header-container {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            align-items: center;
-            margin-bottom: 30px;
-            gap: 20px; /* Space between the elements */
-        }
-
-        /* Search Form */
-        .search-container form {
-            display: flex;
-            align-items: center;
-        }
-
-        .search-container input[type="text"] {
-            padding: 10px;
-            width: 250px;
-            font-size: 16px;
-            border: 2px solid #007BFF;
-            border-radius: 8px;
-            outline: none;
-            margin-right: 10px;
-        }
-
-        .search-container input[type="submit"] {
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .search-container input[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-
-        /* Sort dropdown */
-        .sort-container select {
-            padding: 10px;
-            font-size: 16px;
-            border: 2px solid #28A745;
-            border-radius: 8px;
-            background-color: white;
-            cursor: pointer;
-        }
-
-        .sort-container select:focus {
-            outline: none;
-            border-color: #1e7e34;
-        }
-
-        /* Upload Section */
-        .upload-section form input[type="file"], .upload-section form input[type="text"] {
-            padding: 10px;
-            font-size: 16px;
-            border: 2px solid #007BFF;
-            border-radius: 8px;
-            margin-right: 10px;
-        }
-
-        .upload-section form input[type="submit"] {
-            padding: 10px 20px;
-            background-color: #28A745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .upload-section form input[type="submit"]:hover {
-            background-color: #1e7e34;
-        }
-
-        /* Excel Upload Button */
-        .excel-btn {
-            padding: 10px 20px;
-            background-color: #17a2b8;
-            color: white;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 16px;
-        }
-
-        .excel-btn:hover {
-            background-color: #138496;
-        }
-
-        /* Masonry Container */
-        .logo-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Responsive columns */
-            grid-gap: 20px;
-        }
-
-        .logo-item {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            background-color: #ffffff;
-            text-align: center;
-            height: 300px;
-        }
-
-        .logo-item img {
-            max-width: 100%;
-            max-height: 150px;
-            object-fit: contain;
-        }
-
-        .button-group {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 10px;
-        }
-
-        .button-group button, .button-group a {
-            width: 32px;
-            height: 32px;
-            padding: 0;
-            border: none;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .button-group .view-btn {
-            background-color: #007BFF;
-        }
-
-        .button-group .download-btn {
-            background-color: #28A745;
-        }
-
-        .button-group .delete-btn {
-            background-color: #DC3545;
-        }
-
-        .button-group button:hover, .button-group a:hover {
-            opacity: 0.9;
-        }
-
-        .button-group i {
-            font-size: 10px;
-        }
-
-        /* Back to Home Button */
-        .back-home {
-            text-align: center;
-            margin-top: 40px;
-        }
-
-        .back-home a {
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-        }
-
-        .back-home a:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <h1>Brand Logo Repository</h1>
-
-    <!-- Header Section with Search, Excel Upload, and Sort -->
-    <div class="header-container">
-        <div class="search-container">
-            <form method="get" action="/logos">
-                <input type="text" name="q" value="{{ query }}" placeholder="Search for a brand...">
-                <input type="submit" value="Search">
-            </form>
+{% extends 'base.html' %}
+{% block title %}Brand Logo Repository · Iconic Vault{% endblock %}
+{% block content %}
+  <div class="panel">
+    <h2 style="margin:0 0 8px 0;font-size:18px;">Brand Logo Repository</h2>
+    <div class="controls">
+      <form method="get" action="/logos" id="filterForm">
+        <div class="field">
+          <input class="input" type="text" name="q" id="q" value="{{ query }}" placeholder="Search brands..." autocomplete="off">
+          <button class="btn" type="submit"><i class="fas fa-search"></i>&nbsp;Search</button>
+          <a class="btn ghost" href="/logos">Clear</a>
         </div>
-
-        <!-- Sort Dropdown -->
-        <div class="sort-container">
-            <form method="get" action="/logos">
-                <select name="sort" onchange="this.form.submit()">
-                    <option value="asc" {% if sort_order == 'asc' %} selected {% endif %}>Sort by Name (A-Z)</option>
-                    <option value="desc" {% if sort_order == 'desc' %} selected {% endif %}>Sort by Name (Z-A)</option>
-                </select>
-            </form>
+        <div class="field">
+          <select class="select" name="sort" id="sort">
+            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>A → Z</option>
+            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Z → A</option>
+          </select>
+          <select class="select" name="per_page" id="per_page">
+            {% set p = per_page or 24 %}
+            <option value="12" {% if p == 12 %}selected{% endif %}>12 / page</option>
+            <option value="24" {% if p == 24 %}selected{% endif %}>24 / page</option>
+            <option value="48" {% if p == 48 %}selected{% endif %}>48 / page</option>
+            <option value="96" {% if p == 96 %}selected{% endif %}>96 / page</option>
+          </select>
+          <input type="hidden" name="page" id="page" value="{{ page or 1 }}">
         </div>
-
-        <!-- Manual Upload Section -->
-        <div class="upload-section">
-            <form action="/upload" method="post" enctype="multipart/form-data">
-                <input type="text" name="brand_name" placeholder="Enter Brand Name" required>
-                <input type="file" name="file" required>
-                <input type="submit" value="Upload Logo">
-            </form>
-        </div>
-
-        <!-- Excel Upload Button -->
-        <a href="{{ url_for('upload_excel') }}" class="excel-btn">
-            <i class="fas fa-file-excel"></i> Upload Logos by Excel
+      </form>
+      <div class="upload">
+        <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+          <input class="input" type="text" name="brand_name" placeholder="Brand name" required>
+          <input type="file" name="file" id="fileInput" required>
+          <button class="btn" type="submit"><i class="fas fa-upload"></i>&nbsp;Upload</button>
+        </form>
+        <a href="{{ url_for('upload_excel') }}" class="btn ghost" title="Bulk import via Excel">
+          <i class="fas fa-file-excel"></i>&nbsp;Import Excel
         </a>
+      </div>
     </div>
+  </div>
 
-    <h2>Uploaded Logos</h2>
-
-    <div class="logo-container">
-        {% for logo, brand in logos.items() %}
-        <div class="logo-item">
-            <img src="{{ url_for('uploaded_file', filename=logo) }}" alt="{{ brand }}">
-            <p>{{ brand }}</p>
-            <div class="button-group">
-                <a href="{{ url_for('uploaded_file', filename=logo) }}" target="_blank" class="view-btn">
-                    <i class="fas fa-eye"></i>
-                </a>
-                <a href="{{ url_for('download_logo', filename=logo) }}" download class="download-btn">
-                    <i class="fas fa-download"></i>
-                </a>
-                <form action="{{ url_for('delete_logo', filename=logo) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="delete-btn">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </form>
-            </div>
+  <div class="panel">
+    <form method="get" action="/logos" id="bfForm" class="controls">
+      <div class="field">
+        <input class="input" type="text" name="bf" id="bf" value="{{ bf or '' }}" placeholder="Find a brand via Brandfetch (name or domain)">
+        <button class="btn" type="submit"><i class="fas fa-magnifying-glass"></i>&nbsp;Find Brand</button>
+      </div>
+      <input type="hidden" name="q" value="{{ query }}">
+      <input type="hidden" name="sort" value="{{ sort_order }}">
+      <input type="hidden" name="per_page" value="{{ per_page }}">
+    </form>
+    {% if bf_results and bf_results|length > 0 %}
+      <div class="meta">Brandfetch results for "{{ bf }}"</div>
+      <div class="grid" style="margin-top:12px;">
+        {% for r in bf_results %}
+        <div class="card" title="{{ r.name }}">
+          <div class="thumb">
+            <img loading="lazy" src="{{ r.logo_url }}" alt="{{ r.name }}">
+          </div>
+          <div class="brandname">{{ r.name }}</div>
+          <div class="actions">
+            <a class="iconbtn view" href="{{ r.logo_url }}" target="_blank" title="View on Brandfetch"><i class="fas fa-eye"></i></a>
+            <form action="{{ url_for('import_brandfetch') }}" method="POST">
+              <input type="hidden" name="brand_name" value="{{ r.name }}">
+              <input type="hidden" name="brand_domain" value="{{ r.domain }}">
+              <button type="submit" class="iconbtn download" title="Import to Repository"><i class="fas fa-download"></i></button>
+            </form>
+          </div>
         </div>
         {% endfor %}
-    </div>
+      </div>
+    {% elif bf %}
+      <div class="empty">No Brandfetch results found for "{{ bf }}".</div>
+    {% endif %}
+  </div>
 
-    <!-- Back to Home Button -->
-    <div class="back-home">
-        <a href="/">Back to Home</a>
-    </div>
-</body>
-</html>
+  <div class="meta">
+    {% if total %}
+      Showing {{ start_index }}–{{ end_index }} of {{ total }}
+    {% else %}
+      No logos yet — upload to get started.
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    {% if logos and logos|length > 0 %}
+      <div class="grid">
+        {% for logo, brand in logos.items() %}
+        <div class="card" title="{{ brand }}">
+          <div class="thumb">
+            <img loading="lazy" src="{{ url_for('uploaded_file', filename=logo) }}" alt="{{ brand }}">
+          </div>
+          <div class="brandname">{{ brand }}</div>
+          <div class="actions">
+            <a class="iconbtn view" href="{{ url_for('uploaded_file', filename=logo) }}" target="_blank" title="View">
+              <i class="fas fa-eye"></i>
+            </a>
+            <a class="iconbtn download" href="{{ url_for('download_logo', filename=logo) }}" download title="Download">
+              <i class="fas fa-download"></i>
+            </a>
+            <form action="{{ url_for('delete_logo', filename=logo) }}" method="POST" onsubmit="return confirmDelete('{{ brand }}');">
+              <button type="submit" class="iconbtn delete" title="Delete">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="pager">
+        <div class="left">
+          {% if page > 1 %}
+            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=1) }}" title="First" aria-label="First"><i class="fas fa-angles-left"></i></a>
+            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=page-1) }}" title="Previous" aria-label="Previous"><i class="fas fa-chevron-left"></i></a>
+          {% else %}
+            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="First"><i class="fas fa-angles-left"></i></span>
+            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Previous"><i class="fas fa-chevron-left"></i></span>
+          {% endif %}
+
+          {% if 1 not in pages %}
+            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=1) }}">1</a>
+            <span class="pagebtn" style="pointer-events:none;">…</span>
+          {% endif %}
+
+          {% for pnum in pages %}
+            {% if pnum == page %}
+              <span class="pagebtn active">{{ pnum }}</span>
+            {% else %}
+              <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=pnum) }}">{{ pnum }}</a>
+            {% endif %}
+          {% endfor %}
+
+          {% if total_pages not in pages and total_pages > 0 %}
+            <span class="pagebtn" style="pointer-events:none;">…</span>
+            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=total_pages) }}">{{ total_pages }}</a>
+          {% endif %}
+
+          {% if page < total_pages %}
+            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=page+1) }}" title="Next" aria-label="Next"><i class="fas fa-chevron-right"></i></a>
+            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=total_pages) }}" title="Last" aria-label="Last"><i class="fas fa-angles-right"></i></a>
+          {% else %}
+            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Next"><i class="fas fa-chevron-right"></i></span>
+            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Last"><i class="fas fa-angles-right"></i></span>
+          {% endif %}
+        </div>
+        <div class="right"><a class="link" href="/">Back to Home</a></div>
+      </div>
+    {% else %}
+      <div class="empty">
+        <p><i class="fas fa-image" style="font-size:40px;color:#cbd5e1;"></i></p>
+        <p>No logos found. Try adjusting your search or upload a new logo.</p>
+      </div>
+      <div class="meta"><a class="link" href="/">Back to Home</a></div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  const q = document.getElementById('q');
+  const sort = document.getElementById('sort');
+  const perPage = document.getElementById('per_page');
+  const pageInput = document.getElementById('page');
+  const form = document.getElementById('filterForm');
+  const bfInput = document.getElementById('bf');
+
+  let timer;
+  function triggerSubmit() {
+    pageInput.value = 1; // reset to first page on filters change
+    form.submit();
+  }
+  q && q.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(triggerSubmit, 350);
+  });
+  sort && sort.addEventListener('change', triggerSubmit);
+  perPage && perPage.addEventListener('change', triggerSubmit);
+  bfInput && bfInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('bfForm').submit();
+    }
+  });
+
+  function confirmDelete(name) {
+    return confirm(`Delete logo for "${name}"? This cannot be undone.`);
+  }
+
+  const uploadForm = document.getElementById('uploadForm');
+  const fileInput = document.getElementById('fileInput');
+  if (uploadForm && fileInput) {
+    ['dragover','dragleave','drop'].forEach(evt => {
+      uploadForm.addEventListener(evt, e => {
+        e.preventDefault(); e.stopPropagation();
+        if (evt === 'dragover') uploadForm.classList.add('dropzone','dragover');
+        if (evt === 'dragleave') uploadForm.classList.remove('dragover');
+        if (evt === 'drop') {
+          uploadForm.classList.remove('dragover');
+          const dt = e.dataTransfer;
+          if (dt && dt.files && dt.files.length) {
+            fileInput.files = dt.files;
+          }
+        }
+      });
+    });
+  }
+{% endblock %}

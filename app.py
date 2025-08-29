@@ -4,7 +4,7 @@ import requests
 from urllib.parse import urlparse
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
 from dotenv import load_dotenv
-from brandfetch import search_and_download_logo
+from brandfetch import search_and_download_logo, search_brands, fetch_best_logo_for_domain
 import pandas as pd
 from apis.disney_api import fetch_disney_character
 from apis.marvel_api import fetch_marvel_character
@@ -68,23 +68,111 @@ def download_image(image_url, character_name):
 def home():
     return render_template('home.html')
 
+def make_pages(page, total_pages, window=2):
+    start = max(1, page - window)
+    end = min(total_pages, page + window)
+    return list(range(start, end + 1))
+
 # Brand Logos Route
 @app.route('/logos', methods=['GET'])
 def logos_page():
     query = request.args.get('q', '')
     sort_order = request.args.get('sort', 'asc')
-    
+    bf_query = request.args.get('bf', '').strip()
+    # Pagination params (with safe defaults)
+    try:
+        page = int(request.args.get('page', 1))
+    except ValueError:
+        page = 1
+    try:
+        per_page = int(request.args.get('per_page', 24))
+    except ValueError:
+        per_page = 24
+    per_page = max(1, min(per_page, 200))  # clamp
+    page = max(1, page)
+
+    # Filter
     if query:
         filtered_logos = {logo: brand for logo, brand in brands_data.items() if query.lower() in brand.lower()}
     else:
         filtered_logos = brands_data
 
+    # Sort
     if sort_order == 'asc':
-        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda item: item[1].lower()))
+        sorted_items = sorted(filtered_logos.items(), key=lambda item: item[1].lower())
     else:
-        sorted_logos = dict(sorted(filtered_logos.items(), key=lambda item: item[1].lower(), reverse=True))
+        sorted_items = sorted(filtered_logos.items(), key=lambda item: item[1].lower(), reverse=True)
 
-    return render_template('logos.html', logos=sorted_logos, query=query, sort_order=sort_order)
+    # Pagination calculations
+    total = len(sorted_items)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    if page > total_pages:
+        page = total_pages
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_items = sorted_items[start:end]
+
+    # Convert back to dict for template iteration convenience
+    paged_logos = dict(page_items)
+
+    # Optional Brandfetch search results
+    brandfetch_results = []
+    if bf_query:
+        if not os.getenv('BRANDFETCH_API_KEY'):
+            flash('Brandfetch API key not configured. Add BRANDFETCH_API_KEY to your .env.')
+        
+        # First search to get candidate domains, then fetch details with a best logo
+        candidates = search_brands(bf_query, limit=8) or []
+        for c in candidates[:8]:
+            ident = c.get('domain') or c.get('website') or bf_query
+            details = fetch_best_logo_for_domain(ident)
+            if details and details.get('logo_url'):
+                brandfetch_results.append({
+                    'name': details.get('name') or c.get('name') or ident,
+                    'domain': details.get('domain') or c.get('domain') or ident,
+                    'logo_url': details['logo_url']
+                })
+
+    pages = make_pages(page, total_pages)
+
+    # Range display (1-based)
+    start_index = 0 if total == 0 else start + 1
+    end_index = min(end, total)
+
+    return render_template(
+        'logos.html',
+        logos=paged_logos,
+        query=query,
+        sort_order=sort_order,
+        page=page,
+        per_page=per_page,
+        total=total,
+        total_pages=total_pages,
+        pages=pages,
+        start_index=start_index,
+        end_index=end_index,
+        bf=bf_query,
+        bf_results=brandfetch_results,
+    )
+
+@app.route('/import_brandfetch', methods=['POST'])
+def import_brandfetch():
+    brand_name = request.form.get('brand_name', '').strip()
+    brand_domain = request.form.get('brand_domain', '').strip()
+    if not brand_name or not brand_domain:
+        flash('Missing brand information to import.')
+        return redirect(url_for('logos_page'))
+    # Use Brandfetch helper to download and save
+    success = search_and_download_logo(brand_name, app.config['UPLOAD_FOLDER'], brand_domain)
+    if success:
+        filename = f"{brand_name}.svg"
+        brands_data[filename] = brand_name
+        with open(BRANDS_FILE, 'w') as f:
+            json.dump(brands_data, f)
+        flash(f"Imported logo for {brand_name} from Brandfetch.")
+    else:
+        flash(f"Failed to import logo for {brand_name}. Ensure BRANDFETCH_API_KEY is set and domain is correct.")
+    return redirect(url_for('logos_page', bf=brand_domain))
 
 # Upload brand logos via form
 @app.route('/upload', methods=['POST'])
@@ -183,10 +271,10 @@ def upload_excel():
 # Licensed Characters Route
 @app.route('/characters', methods=['GET', 'POST'])
 def characters_page():
-    api_query = request.args.get('character_search', '')  
-    local_query = request.args.get('local_search', '')   
-    api_search_results = []  # Changed to list for formatted results
-    combined_characters = characters_data  
+    api_query = request.args.get('character_search', '')
+    local_query = request.args.get('local_search', '')
+    api_search_results = []  # list of formatted results
+    combined_characters = characters_data
 
     if api_query:
         try:
@@ -201,16 +289,78 @@ def characters_page():
                              if local_query.lower() in character.lower()}
 
     sort_order = request.args.get('sort', 'asc')
-    sorted_characters = dict(sorted(combined_characters.items(), 
-                                  key=lambda item: item[0].lower(), 
-                                  reverse=(sort_order == 'desc')))
 
-    return render_template('characters.html', 
-                         characters=sorted_characters, 
-                         search_results=api_search_results, 
-                         query=api_query, 
-                         sort_order=sort_order, 
-                         local_search=local_query)
+    # Pagination params
+    try:
+        page = int(request.args.get('page', 1))
+    except ValueError:
+        page = 1
+    try:
+        per_page = int(request.args.get('per_page', 24))
+    except ValueError:
+        per_page = 24
+    per_page = max(1, min(per_page, 200))
+    page = max(1, page)
+
+    sorted_items = sorted(
+        combined_characters.items(), key=lambda item: item[0].lower(), reverse=(sort_order == 'desc')
+    )
+
+    total = len(sorted_items)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    if page > total_pages:
+        page = total_pages
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_items = sorted_items[start:end]
+    paged_characters = dict(page_items)
+
+    pages = make_pages(page, total_pages)
+
+    start_index = 0 if total == 0 else start + 1
+    end_index = min(end, total)
+
+    return render_template(
+        'characters.html',
+        characters=paged_characters,
+        search_results=api_search_results,
+        query=api_query,
+        sort_order=sort_order,
+        local_search=local_query,
+        page=page,
+        per_page=per_page,
+        total=total,
+        total_pages=total_pages,
+        pages=pages,
+        start_index=start_index,
+        end_index=end_index,
+    )
+
+@app.route('/dashboard')
+def dashboard():
+    # Summary metrics
+    logo_count = len(brands_data)
+    char_count = len(characters_data)
+
+    # Recent logos by mtime
+    recent = []
+    try:
+        for fname, brand in brands_data.items():
+            fpath = os.path.join(UPLOAD_FOLDER, fname)
+            if os.path.exists(fpath):
+                recent.append((fname, brand, os.path.getmtime(fpath)))
+        recent = sorted(recent, key=lambda x: x[2], reverse=True)[:8]
+    except Exception:
+        recent = []
+
+    # Sample characters (first 8 alphabetically)
+    sample_chars = sorted(characters_data.items(), key=lambda x: x[0].lower())[:8]
+
+    return render_template('dashboard.html',
+                           logo_count=logo_count,
+                           char_count=char_count,
+                           recent_logos=recent,
+                           sample_characters=sample_chars)
 
 @app.route('/add_character', methods=['POST'])
 def add_character():
@@ -292,23 +442,34 @@ def download_app():
 
 def search_characters(query):
     results = []
-    
+
     # Get results from each API
     disney_results = fetch_disney_character(query)
     marvel_results = fetch_marvel_character(query)
     fandom_results = fetch_fandom_character(query)
-    
-    # Now each API is expected to return a list of dictionaries.
-    for api_results in [disney_results, marvel_results, fandom_results]:
-        if isinstance(api_results, list):
-            # Each result should be a dict with keys 'name', 'image', and 'source'
+
+    # Normalize results to a list of {name, image, source}
+    sources = [disney_results, marvel_results, fandom_results]
+    for api_results in sources:
+        if isinstance(api_results, dict):
+            # Disney returns a mapping of name -> imageUrl
+            for name, image in api_results.items():
+                if name and image:
+                    results.append({
+                        'name': str(name),
+                        'image': str(image),
+                        'source': 'disney'
+                    })
+        elif isinstance(api_results, list):
             for result in api_results:
-                # Sanity-check that result is a dict
-                if isinstance(result, dict):
-                    results.append(result)
-        elif isinstance(api_results, dict):
-            results.append(api_results)
-    
+                if not isinstance(result, dict):
+                    continue
+                name = result.get('name') or result.get('title')
+                image = result.get('image') or result.get('imageUrl') or result.get('thumbnail')
+                source = result.get('source') or 'api'
+                if name and image:
+                    results.append({'name': name, 'image': image, 'source': source})
+
     return results
 
 if __name__ == '__main__':

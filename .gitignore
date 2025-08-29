@@ -5,3 +5,4 @@ __pycache__/marvel.cpython-312.pyc
 static/characters/*.*
 static/images/*.*
 static/logos/*.*
+venv/

@@ -1,51 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Excel</title>
-    <style>
-        #progress-bar {
-            width: 100%;
-            background-color: #f3f3f3;
-        }
-
-        #progress-bar-fill {
-            width: 0;
-            height: 30px;
-            background-color: #4caf50;
-            text-align: center;
-            line-height: 30px;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <h1>Upload Excel File</h1>
-
+{% extends 'base.html' %}
+{% block title %}Upload Excel · Iconic Vault{% endblock %}
+{% block content %}
+  <div class="panel" style="max-width:720px;margin:24px auto 0;">
+    <h1 style="font-size:22px;margin:8px 0 0 0">Upload Excel File</h1>
+    <p class="meta">Provide an Excel file with columns <strong>Brand</strong> and <strong>Domain</strong>. We’ll fetch logos automatically.</p>
     <form id="upload-form" action="/upload_excel" method="post" enctype="multipart/form-data">
-        <input type="file" name="excel_file" accept=".xlsx, .xls">
-        <input type="submit" value="Upload and Find Logos">
+      <div class="field" style="margin:16px 0;">
+        <input class="input" type="file" name="excel_file" accept=".xlsx, .xls" required>
+        <button class="btn" type="submit">Upload and Find Logos</button>
+      </div>
     </form>
-
-    <div id="progress-bar">
-        <div id="progress-bar-fill">0%</div>
-    </div>
-
-    <script>
-        document.getElementById('upload-form').onsubmit = function() {
-            const progressBarFill = document.getElementById('progress-bar-fill');
-            let interval = setInterval(function() {
-                let width = parseInt(progressBarFill.style.width);
-                if (width >= 100) {
-                    clearInterval(interval);
-                } else {
-                    width += 10;  // Example increment, you'll want to update this dynamically
-                    progressBarFill.style.width = width + '%';
-                    progressBarFill.innerText = width + '%';
-                }
-            }, 1000);  // Update every second
-        };
-    </script>
-</body>
-</html>
+    <div class="progress" style="height:10px;background:#eef2ff;border-radius:8px;overflow:hidden;border:1px solid var(--border)"><div class="bar" id="bar" style="height:100%;width:0;background:#22c55e;transition:width .2s ease"></div></div>
+    <div class="nav" style="margin-top:12px"><a class="link" href="{{ url_for('logos_page') }}">Back to Logos</a></div>
+  </div>
+{% endblock %}
+{% block scripts %}
+  const form = document.getElementById('upload-form');
+  const bar = document.getElementById('bar');
+  form && (form.onsubmit = function(){
+    let pct = 0; const it = setInterval(()=>{
+      pct = Math.min(100, pct + 8);
+      bar.style.width = pct + '%';
+      if(pct === 100) clearInterval(it);
+    }, 250);
+  });
+{% endblock %}

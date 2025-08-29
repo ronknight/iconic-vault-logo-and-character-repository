@@ -1,42 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4sgm - Logo and Characters Repository</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 100px;
-        }
-        h1 {
-            margin-bottom: 50px;
-        }
-        .nav-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 50px;
-        }
-        .nav-buttons a {
-            text-decoration: none;
-            padding: 15px 30px;
-            background-color: #007BFF;
-            color: white;
-            border-radius: 8px;
-            font-size: 20px;
-        }
-        .nav-buttons a:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <h1>Welcome to the Repository</h1>
-
-    <div class="nav-buttons">
-        <a href="/logos">Go to Brand Logos</a>
-        <a href="/characters">Go to Licensed Characters</a>
+{% extends 'base.html' %}
+{% block title %}Iconic Vault{% endblock %}
+{% block content %}
+  <div class="panel" style="margin-top:32px;">
+    <h1 style="margin:0 0 8px 0; font-size:28px;">Iconic Vault</h1>
+    <p class="meta">Manage brand logos and licensed characters with fast search, clean browsing, Brandfetch imports, and Excel bulk upload.</p>
+    <div class="controls" style="margin-top:12px;">
+      <a class="btn primary" href="{{ url_for('logos_page') }}"><i class="fas fa-images"></i> Brand Logos</a>
+      <a class="btn" href="{{ url_for('characters_page') }}"><i class="fas fa-user-astronaut"></i> Licensed Characters</a>
+      <a class="btn" href="{{ url_for('dashboard') }}"><i class="fas fa-chart-pie"></i> Dashboard</a>
+      <a class="btn" href="{{ url_for('upload_excel') }}"><i class="fas fa-file-excel"></i> Import Excel</a>
     </div>
-</body>
-</html>
+  </div>
+{% endblock %}

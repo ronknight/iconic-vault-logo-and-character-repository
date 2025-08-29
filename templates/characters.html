@@ -1,286 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Licensed Characters Repository</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f0f2f5;
-        }
-        h1, h2 {
-            text-align: center;
-        }
-        .header-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .search-container {
-            display: flex;
-            align-items: center;
-        }
-        .search-container input[type="text"] {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-        .search-container input[type="submit"] {
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            margin-left: 10px;
-            cursor: pointer;
-        }
-        .sort-container {
-            display: flex;
-            align-items: center;
-        }
-        .sort-container select {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #28A745;
-            background-color: white;
-        }
-        .upload-section {
-            display: flex;
-            align-items: center;
-        }
-        .upload-section form {
-            margin-right: 20px;
-        }
-        .upload-section input[type="text"],
-        .upload-section input[type="file"] {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-        .upload-section input[type="submit"] {
-            padding: 10px 20px;
-            background-color: #28A745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .upload-section a {
-            padding: 10px 20px;
-            background-color: #28A745;
-            color: white;
-            border-radius: 8px;
-            text-decoration: none;
-        }
-        .characters-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .character-item {
-            margin: 20px;
-            text-align: center;
-        }
-        .character-item img {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 8px;
-            padding: 10px;
-            background-color: #f9f9f9;
-        }
-        .button-group {
-            margin-top: 10px;
-            display: flex;
-            justify-content: space-around;
-        }
-        .button-group a,
-        .button-group button {
-            width: 32px;
-            height: 32px;
-            padding: 0;
-            border: none;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .button-group .view-btn {
-            background-color: #007BFF;
-        }
-        .button-group .download-btn {
-            background-color: #28A745;
-        }
-        .button-group .delete-btn {
-            background-color: #DC3545;
-        }
-        .button-group .add-btn {
-            background-color: #28A745;
-        }
-        .button-group button:hover,
-        .button-group a:hover {
-            opacity: 0.9;
-        }
-        .button-group i {
-            font-size: 16px;
-        }
-        .back-home {
-            text-align: center;
-            margin-top: 40px;
-        }
-        .back-home a {
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-        }
-        .back-home a:hover {
-            background-color: #0056b3;
-        }
-        .api-source {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 5px;
-            gap: 5px;
-        }
-        .api-icon {
-            width: 20px;
-            height: 20px;
-            object-fit: contain;
-        }
-        .api-label {
-            font-size: 12px;
-            color: #666;
-        }
-    </style>
-</head>
-<body>
-
-<h1>Licensed Characters Repository</h1>
-
-<div class="header-container">
-    <!-- API Search -->
-    <div class="search-container">
-        <form method="get" action="/characters">
-            <input type="text" name="character_search" value="{{ query }}" placeholder="Search characters (Disney/Marvel/Fandom)...">
-            <input type="submit" value="Search APIs">
-        </form>
+{% extends 'base.html' %}
+{% block title %}Licensed Characters · Iconic Vault{% endblock %}
+{% block content %}
+  <div class="panel">
+    <h2 style="margin:0 0 8px 0;font-size:18px;">Licensed Characters Repository</h2>
+    <div class="controls">
+      <form method="get" action="/characters" id="filterForm">
+        <div class="field">
+          <input class="input" type="text" name="character_search" value="{{ query }}" placeholder="Search characters (Disney/Marvel/Fandom)..." autocomplete="off">
+          <button class="btn" type="submit"><i class="fas fa-search"></i>&nbsp;Search APIs</button>
+        </div>
+        <div class="field">
+          <input class="input" type="text" name="local_search" value="{{ local_search }}" placeholder="Search saved characters..." autocomplete="off">
+          <select class="select" name="sort" id="sort" onchange="document.getElementById('page').value=1; this.form.submit();">
+            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>A → Z</option>
+            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Z → A</option>
+          </select>
+          <select class="select" name="per_page" id="per_page" onchange="document.getElementById('page').value=1; this.form.submit();">
+            {% set p = per_page or 24 %}
+            <option value="12" {% if p == 12 %}selected{% endif %}>12 / page</option>
+            <option value="24" {% if p == 24 %}selected{% endif %}>24 / page</option>
+            <option value="48" {% if p == 48 %}selected{% endif %}>48 / page</option>
+            <option value="96" {% if p == 96 %}selected{% endif %}>96 / page</option>
+          </select>
+          <input type="hidden" name="page" id="page" value="{{ page or 1 }}">
+          <a class="btn ghost" href="/characters">Clear</a>
+        </div>
+      </form>
     </div>
-    
-    <!-- Local Search -->
-    <div class="search-container">
-        <form method="get" action="/characters">
-            <input type="text" name="local_search" value="{{ local_search }}" placeholder="Search saved characters...">
-            <input type="submit" value="Search Local">
-        </form>
+    <div class="meta">
+      {% if total %}
+        Showing {{ start_index }}–{{ end_index }} of {{ total }}
+      {% else %}
+        No saved characters yet — add from search or upload.
+      {% endif %}
     </div>
+  </div>
 
-    <!-- Sorting Option -->
-    <div class="sort-container">
-        <form method="get" action="/characters">
-            <select name="sort" onchange="this.form.submit()">
-                <option value="asc" {% if sort_order == 'asc' %} selected {% endif %}>Sort by Name (A-Z)</option>
-                <option value="desc" {% if sort_order == 'desc' %} selected {% endif %}>Sort by Name (Z-A)</option>
-            </select>
-        </form>
-    </div>
-
-    <!-- Upload Section -->
-    <div class="upload-section">
-        <form action="/upload_character" method="post" enctype="multipart/form-data">
-            <input type="text" name="character_name" placeholder="Enter Character Name" required>
-            <input type="file" name="file" required>
-            <input type="submit" value="Upload Character">
-        </form>
-        <a href="{{ url_for('upload_characters_excel') }}">
-            Upload Characters by Excel
-        </a>
-    </div>
-</div>
-
-<!-- Display API Search Results -->
-<h2>Search Results from APIs</h2>
-<div class="characters-container">
+  <div class="panel">
+    <h2 style="margin:0 0 8px 0;font-size:18px;">Search Results from APIs</h2>
     {% if search_results %}
-    {% for character in search_results %}
-    <div class="character-item">
-        <img src="{{ character.image }}" alt="{{ character.name }}">
-        <p>{{ character.name }}</p>
-        <div class="api-source">
-            {% if character.source == 'disney' %}
-            <img src="/static/images/disney-icon.png" alt="Disney" class="api-icon">
-            <span class="api-label">Disney</span>
-            {% elif character.source == 'marvel' %}
-            <img src="/static/images/marvel-icon.png" alt="Marvel" class="api-icon">
-            <span class="api-label">Marvel</span>
-            {% elif character.source == 'fandom' %}
-            <img src="/static/images/fandom-icon.png" alt="Fandom" class="api-icon">
-            <span class="api-label">Fandom</span>
+      <div class="grid">
+        {% for character in search_results %}
+        <div class="card" title="{{ character.name }}">
+          <div class="thumb" style="aspect-ratio:1/1"><img loading="lazy" src="{{ character.image }}" alt="{{ character.name }}"></div>
+          <div class="brandname">{{ character.name }}</div>
+          <div class="actions">
+            <form action="{{ url_for('add_character') }}" method="POST">
+              <input type="hidden" name="character_name" value="{{ character.name }}">
+              <input type="hidden" name="image_url" value="{{ character.image }}">
+              <input type="hidden" name="source" value="{{ character.source }}">
+              <button type="submit" class="iconbtn download" title="Add to saved"><i class="fas fa-plus"></i></button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">No search results found.</div>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2 style="margin:0 0 8px 0;font-size:18px;">Saved Characters</h2>
+    {% if characters and characters|length > 0 %}
+      <div class="grid">
+        {% for character, image in characters.items() %}
+        <div class="card" title="{{ character }}">
+          <div class="thumb" style="aspect-ratio:1/1"><img loading="lazy" src="{{ image }}" alt="{{ character }}"></div>
+          <div class="brandname">{{ character }}</div>
+          <div class="actions">
+            <a href="{{ image }}" target="_blank" class="iconbtn view" title="View"><i class="fas fa-eye"></i></a>
+            <a href="{{ image }}" download class="iconbtn download" title="Download"><i class="fas fa-download"></i></a>
+            <form action="{{ url_for('delete_character', character_name=character) }}" method="POST" onsubmit="return confirm('Delete character \"{{ character }}\"? This cannot be undone.');">
+              <button type="submit" class="iconbtn delete" title="Delete"><i class="fas fa-trash"></i></button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="pager">
+        <div class="left">
+          {% if page > 1 %}
+            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=1) }}" title="First" aria-label="First"><i class="fas fa-angles-left"></i></a>
+            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=page-1) }}" title="Previous" aria-label="Previous"><i class="fas fa-chevron-left"></i></a>
+          {% else %}
+            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="First"><i class="fas fa-angles-left"></i></span>
+            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Previous"><i class="fas fa-chevron-left"></i></span>
+          {% endif %}
+
+          {% if 1 not in pages %}
+            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=1) }}">1</a>
+            <span class="pagebtn" style="pointer-events:none;">…</span>
+          {% endif %}
+
+          {% for pnum in pages %}
+            {% if pnum == page %}
+              <span class="pagebtn active">{{ pnum }}</span>
+            {% else %}
+              <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=pnum) }}">{{ pnum }}</a>
             {% endif %}
+          {% endfor %}
+
+          {% if total_pages not in pages and total_pages > 0 %}
+            <span class="pagebtn" style="pointer-events:none;">…</span>
+            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=total_pages) }}">{{ total_pages }}</a>
+          {% endif %}
+
+          {% if page < total_pages %}
+            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=page+1) }}" title="Next" aria-label="Next"><i class="fas fa-chevron-right"></i></a>
+            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=total_pages) }}" title="Last" aria-label="Last"><i class="fas fa-angles-right"></i></a>
+          {% else %}
+            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Next"><i class="fas fa-chevron-right"></i></span>
+            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Last"><i class="fas fa-angles-right"></i></span>
+          {% endif %}
         </div>
-        <div class="button-group">
-            <form action="{{ url_for('add_character') }}" method="POST" style="display:inline;">
-                <input type="hidden" name="character_name" value="{{ character.name }}">
-                <input type="hidden" name="image_url" value="{{ character.image }}">
-                <input type="hidden" name="source" value="{{ character.source }}">
-                <button type="submit" class="add-btn" style="background-color: #28A745; padding: 10px;">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-    {% endfor %}
+        <div class="right"><a class="link" href="/">Back to Home</a></div>
+      </div>
     {% else %}
-    <p>No search results found.</p>
+      <div class="empty">No characters found. Try adding some from search above.</div>
+      <div class="meta"><a class="link" href="/">Back to Home</a></div>
     {% endif %}
-</div>
-
-<!-- Display Saved Characters -->
-<h2>Uploaded Characters</h2>
-
-<div class="characters-container">
-    {% if characters %}
-    {% for character, image in characters.items() %}
-    <div class="character-item">
-        <img src="{{ image }}" alt="{{ character }}">
-        <p>{{ character }}</p>
-        <div class="button-group">
-            <a href="{{ image }}" target="_blank" class="view-btn">
-                <i class="fas fa-eye"></i>
-            </a>
-            <a href="{{ image }}" download class="download-btn">
-                <i class="fas fa-download"></i>
-            </a>
-            <form action="{{ url_for('delete_character', character_name=character) }}" method="POST" style="display:inline;">
-                <button type="submit" class="delete-btn">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-    {% endfor %}
-    {% else %}
-    <p>No characters found.</p>
-    {% endif %}
-</div>
-
-<!-- Back to Home Button -->
-<div class="back-home">
-    <a href="/">Back to Home</a>
-</div>
-
-</body>
-</html>
+  </div>
+{% endblock %}
