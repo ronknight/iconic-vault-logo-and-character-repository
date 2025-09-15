@@ -11,9 +11,9 @@
         </div>
         <div class="field">
           <label style="font-weight:600;margin-right:12px;">Search in:</label>
-          <label style="margin-right:8px;"><input type="checkbox" name="apis" value="disney" {% if 'disney' in request.args.getlist('apis') or not request.args.getlist('apis') %}checked{% endif %}> Disney</label>
-          <label style="margin-right:8px;"><input type="checkbox" name="apis" value="marvel" {% if 'marvel' in request.args.getlist('apis') or not request.args.getlist('apis') %}checked{% endif %}> Marvel</label>
-          <label style="margin-right:8px;"><input type="checkbox" name="apis" value="fandom" {% if 'fandom' in request.args.getlist('apis') or not request.args.getlist('apis') %}checked{% endif %}> Fandom</label>
+          {% for api_id in available_apis %}
+            <label style="margin-right:8px;"><input type="checkbox" name="apis" value="{{ api_id }}" {% if api_id in request.args.getlist('apis') or not request.args.getlist('apis') %}checked{% endif %}> {{ api_id|title }}</label>
+          {% endfor %}
         </div>
         <div class="field">
           <input class="input" type="text" name="local_search" value="{{ local_search }}" placeholder="Search saved characters..." autocomplete="off">

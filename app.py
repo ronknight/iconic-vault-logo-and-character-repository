@@ -1,14 +1,12 @@
 import os
 import json
 import requests
+import importlib
 from urllib.parse import urlparse
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, send_file, flash
 from dotenv import load_dotenv
 from brandfetch import search_and_download_logo, search_brands, fetch_best_logo_for_domain
 import pandas as pd
-from apis.disney_api import fetch_disney_character
-from apis.marvel_api import fetch_marvel_character
-from apis.fandom_api import fetch_fandom_character
 
 # Load environment variables
 load_dotenv()
@@ -321,7 +319,7 @@ def characters_page():
     # Get selected APIs from form/URL params
     selected_apis = request.args.getlist('apis') or request.form.getlist('apis')
     if not selected_apis:
-        selected_apis = ['disney', 'marvel', 'fandom']  # Default to all
+        selected_apis = get_available_apis()  # Default to all available
 
     if api_query:
         try:
@@ -381,6 +379,7 @@ def characters_page():
         pages=pages,
         start_index=start_index,
         end_index=end_index,
+        available_apis=get_available_apis(),
     )
 
 @app.route('/dashboard')
@@ -587,46 +586,170 @@ def upload_characters_excel():
 def download_app():
     return send_from_directory(app.root_path, 'app.py', as_attachment=True)
 
+# Admin route for managing APIs
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_page():
+    config = load_api_config()
+    available_apis = get_available_apis()
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'add_api':
+            api_id = request.form.get('api_id', '').strip()
+            api_name = request.form.get('api_name', '').strip()
+            module = request.form.get('module', '').strip()
+            function = request.form.get('function', '').strip()
+            keys = request.form.get('keys', '').strip()
+
+            if api_id and api_name and module and function:
+                keys_list = [k.strip() for k in keys.split(',') if k.strip()]
+                config['apis'][api_id] = {
+                    'name': api_name,
+                    'module': module,
+                    'function': function,
+                    'keys': keys_list
+                }
+                with open('apis_config.json', 'w') as f:
+                    json.dump(config, f, indent=2)
+                flash(f"API '{api_name}' added successfully.")
+            else:
+                flash("All fields are required for adding an API.")
+
+        elif action == 'delete_api':
+            api_id = request.form.get('api_id')
+            if api_id in config['apis']:
+                del config['apis'][api_id]
+                with open('apis_config.json', 'w') as f:
+                    json.dump(config, f, indent=2)
+                flash(f"API '{api_id}' deleted successfully.")
+
+        elif action == 'update_keys':
+            # Update .env file with provided keys
+            env_updates = {}
+            for key in request.form:
+                if key.startswith('key_'):
+                    env_key = key[4:]  # Remove 'key_' prefix
+                    value = request.form[key].strip()
+                    if value:
+                        env_updates[env_key] = value
+
+            if env_updates:
+                # Read current .env
+                env_lines = []
+                if os.path.exists('.env'):
+                    with open('.env', 'r') as f:
+                        env_lines = f.readlines()
+
+                # Update or add keys
+                updated_keys = set()
+                for i, line in enumerate(env_lines):
+                    if '=' in line:
+                        key = line.split('=')[0].strip()
+                        if key in env_updates:
+                            env_lines[i] = f"{key}={env_updates[key]}\n"
+                            updated_keys.add(key)
+
+                # Add new keys
+                for key, value in env_updates.items():
+                    if key not in updated_keys:
+                        env_lines.append(f"{key}={value}\n")
+
+                # Write back
+                with open('.env', 'w') as f:
+                    f.writelines(env_lines)
+
+                flash("API keys updated successfully.")
+                # Reload environment variables
+                load_dotenv()
+
+    # Get all configured APIs with their status
+    apis_status = []
+    for api_id, api_config in config.get('apis', {}).items():
+        status = 'available' if api_id in available_apis else 'missing_keys'
+        apis_status.append({
+            'id': api_id,
+            'name': api_config.get('name', api_id),
+            'module': api_config.get('module', ''),
+            'function': api_config.get('function', ''),
+            'required_keys': api_config.get('keys', []),
+            'status': status
+        })
+
+    return render_template('admin.html', apis=apis_status)
+
+# Load API configuration
+def load_api_config():
+    config_path = 'apis_config.json'
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    return {"apis": {}}
+
+# Get available APIs
+def get_available_apis():
+    config = load_api_config()
+    available = []
+    for api_id, api_config in config.get('apis', {}).items():
+        # Check if required keys are set
+        keys_ok = True
+        for key in api_config.get('keys', []):
+            if not os.getenv(key):
+                keys_ok = False
+                break
+        if keys_ok:
+            available.append(api_id)
+    return available
+
+# Dynamically call API function
+def call_api_function(api_id, query):
+    config = load_api_config()
+    api_config = config.get('apis', {}).get(api_id)
+    if not api_config:
+        return []
+
+    try:
+        module = importlib.import_module(api_config['module'])
+        func = getattr(module, api_config['function'])
+        return func(query)
+    except Exception as e:
+        print(f"Error calling {api_id} API: {e}")
+        return []
+
 def search_characters(query, selected_apis=None):
     results = []
+    config = load_api_config()
 
     if selected_apis is None:
-        selected_apis = ['disney', 'marvel', 'fandom']
+        selected_apis = list(config.get('apis', {}).keys())
 
-    # Get results from selected APIs
-    if 'disney' in selected_apis:
-        disney_results = fetch_disney_character(query)
-        if isinstance(disney_results, dict):
-            # Disney returns a mapping of name -> imageUrl
-            for name, image in disney_results.items():
+    # Filter to only available APIs (those with keys set)
+    available_apis = get_available_apis()
+    selected_apis = [api for api in selected_apis if api in available_apis]
+
+    for api_id in selected_apis:
+        api_results = call_api_function(api_id, query)
+        api_config = config.get('apis', {}).get(api_id, {})
+        source_name = api_config.get('name', api_id)
+
+        if isinstance(api_results, dict):
+            # API returns a mapping of name -> imageUrl (like Disney)
+            for name, image in api_results.items():
                 if name and image:
                     results.append({
                         'name': str(name),
                         'image': str(image),
-                        'source': 'disney'
+                        'source': api_id
                     })
-
-    if 'marvel' in selected_apis:
-        marvel_results = fetch_marvel_character(query)
-        if isinstance(marvel_results, list):
-            for result in marvel_results:
+        elif isinstance(api_results, list):
+            # API returns a list of dicts (like Marvel, Fandom)
+            for result in api_results:
                 if not isinstance(result, dict):
                     continue
                 name = result.get('name')
                 image = result.get('image')
                 if name and image:
-                    results.append({'name': name, 'image': image, 'source': 'marvel'})
-
-    if 'fandom' in selected_apis:
-        fandom_results = fetch_fandom_character(query)
-        if isinstance(fandom_results, list):
-            for result in fandom_results:
-                if not isinstance(result, dict):
-                    continue
-                name = result.get('name')
-                image = result.get('image')
-                if name and image:
-                    results.append({'name': name, 'image': image, 'source': 'fandom'})
+                    results.append({'name': name, 'image': image, 'source': api_id})
 
     return results
 

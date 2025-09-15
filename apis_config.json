@@ -1,0 +1,22 @@
+{
+  "apis": {
+    "disney": {
+      "name": "Disney",
+      "module": "apis.disney_api",
+      "function": "fetch_disney_character",
+      "keys": []
+    },
+    "marvel": {
+      "name": "Marvel",
+      "module": "apis.marvel_api",
+      "function": "fetch_marvel_character",
+      "keys": ["MARVEL_PUBLIC_KEY", "MARVEL_PRIVATE_KEY"]
+    },
+    "fandom": {
+      "name": "Fandom",
+      "module": "apis.fandom_api",
+      "function": "fetch_fandom_character",
+      "keys": []
+    }
+  }
+}
