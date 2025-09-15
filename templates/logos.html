@@ -143,19 +143,23 @@
             <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Last"><i class="fas fa-angles-right"></i></span>
           {% endif %}
         </div>
-        <div class="right"><a class="link" href="/">Back to Home</a></div>
+        <div class="right">
+          <a class="btn ghost" href="/characters"><i class="fas fa-user-astronaut"></i> Characters</a>
+          <a class="btn ghost" href="/"><i class="fas fa-home"></i> Home</a>
+        </div>
       </div>
     {% else %}
       <div class="empty">
         <p><i class="fas fa-image" style="font-size:40px;color:#cbd5e1;"></i></p>
         <p>No logos found. Try adjusting your search or upload a new logo.</p>
       </div>
-      <div class="meta"><a class="link" href="/">Back to Home</a></div>
+      <div class="meta"><a class="btn ghost" href="/"><i class="fas fa-home"></i> Home</a></div>
     {% endif %}
   </div>
 {% endblock %}
 
 {% block scripts %}
+<script>
   const q = document.getElementById('q');
   const sort = document.getElementById('sort');
   const perPage = document.getElementById('per_page');
@@ -202,4 +206,5 @@
       });
     });
   }
+</script>
 {% endblock %}

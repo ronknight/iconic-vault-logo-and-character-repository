@@ -39,7 +39,7 @@ class FandomAPI:
                         results.append({
                             "name": character.get("name"),
                             "image": image_url,
-                            "source": "disney"
+                            "source": "fandom"
                         })
             except Exception as e:
                 print(f"Disney API error on page {page}: {e}")

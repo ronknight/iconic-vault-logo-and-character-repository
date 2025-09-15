@@ -91,7 +91,8 @@ def fetch_marvel_character(character_name):
 
         # Fallback: broader search by prefix if exact name produced nothing
         params_prefix = {
-            "nameStartsWith": character_name,
+            "nameStartsWith": character_name[0].upper() if character_name else "",
+            "limit": 100,
             "ts": ts,
             "apikey": MARVEL_PUBLIC_KEY,
             "hash": hash_result
@@ -104,6 +105,9 @@ def fetch_marvel_character(character_name):
         data = json_data.get("data", {})
         results_list = data.get("results", [])
         for character in results_list:
+            name = character.get("name", "")
+            if not name.lower().startswith(character_name.lower()):
+                continue
             thumbnail = character.get("thumbnail") or {}
             path = thumbnail.get('path', '')
             if not path or 'image_not_available' in path:
@@ -111,7 +115,7 @@ def fetch_marvel_character(character_name):
             image_url = _variant_url(thumbnail, 'portrait_uncanny') or _variant_url(thumbnail, 'standard_large')
             if image_url:
                 results.append({
-                    "name": character.get("name"),
+                    "name": name,
                     "image": image_url,
                     "source": "marvel"
                 })

@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
-{% block title %}Upload Excel · Iconic Vault{% endblock %}
+{% block title %}Upload Characters Excel · Iconic Vault{% endblock %}
 {% block content %}
   <div class="panel" style="max-width:720px;margin:24px auto 0;">
-    <h1 style="font-size:22px;margin:8px 0 0 0">Upload Excel File</h1>
-    <p class="meta">Provide an Excel or CSV file with columns <strong>Brand</strong> and <strong>Domain</strong>. We’ll fetch logos automatically.</p>
-    <form id="upload-form" action="/upload_excel" method="post" enctype="multipart/form-data">
+    <h1 style="font-size:22px;margin:8px 0 0 0">Upload Characters File</h1>
+    <p class="meta">Provide a CSV or Excel file with columns <strong>LicensedCharacterName</strong> and <strong>imageUrl</strong> (or <strong>Character</strong> and <strong>Image</strong>). Images will be downloaded automatically.</p>
+    <form id="upload-form" action="/upload_characters_excel" method="post" enctype="multipart/form-data">
       <div class="field" style="margin:16px 0;">
         <input class="input" type="file" name="excel_file" accept=".xlsx, .xls, .csv" required>
-        <button class="btn" type="submit">Upload and Find Logos</button>
+        <button class="btn" type="submit">Upload and Add Characters</button>
       </div>
     </form>
     <div class="progress" style="height:10px;background:#eef2ff;border-radius:8px;overflow:hidden;border:1px solid var(--border)"><div class="bar" id="bar" style="height:100%;width:0;background:#22c55e;transition:width .2s ease"></div></div>
-    <div class="nav" style="margin-top:12px"><a class="btn ghost" href="{{ url_for('download_excel_template') }}"><i class="fas fa-download"></i> Download Template</a> <a class="btn ghost" href="{{ url_for('logos_page') }}"><i class="fas fa-images"></i> Logos</a></div>
+    <div class="nav" style="margin-top:12px"><a class="btn ghost" href="{{ url_for('characters_page') }}"><i class="fas fa-user-astronaut"></i> Characters</a></div>
   </div>
 {% endblock %}
 {% block scripts %}

@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from urllib.parse import urlparse
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, send_file, flash
 from dotenv import load_dotenv
 from brandfetch import search_and_download_logo, search_brands, fetch_best_logo_for_domain
 import pandas as pd
@@ -14,7 +14,7 @@ from apis.fandom_api import fetch_fandom_character
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # File paths
 UPLOAD_FOLDER = 'static/logos'
@@ -38,7 +38,13 @@ else:
 
 if os.path.exists(CHARACTERS_FILE):
     with open(CHARACTERS_FILE, 'r') as f:
-        characters_data = json.load(f)
+        temp = json.load(f)
+    characters_data = {}
+    for name, data in temp.items():
+        if isinstance(data, str):
+            characters_data[name] = {'image': data, 'source': 'unknown'}
+        else:
+            characters_data[name] = data
 else:
     characters_data = {}
 
@@ -62,6 +68,15 @@ def download_image(image_url, character_name):
     except Exception as e:
         print(f"Error downloading image for {character_name}: {e}")
         return None
+
+# Favicon route
+@app.route('/favicon.ico')
+def favicon():
+    favicon_path = os.path.join(app.root_path, 'static', 'favicon.ico')
+    if os.path.exists(favicon_path):
+        return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico')
+    else:
+        return '', 204  # No Content
 
 # Home route
 @app.route('/')
@@ -219,6 +234,24 @@ def delete_logo(filename):
 
     return redirect(url_for('logos_page'))
 
+# Download Excel template
+@app.route('/download_excel_template')
+def download_excel_template():
+    # Create a sample Excel file with headers and a sample row
+    data = {
+        'Brand': ['Example Brand'],
+        'Domain': ['example.com']
+    }
+    df = pd.DataFrame(data)
+    
+    from io import BytesIO
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Template')
+    output.seek(0)
+    
+    return send_file(output, as_attachment=True, download_name='excel_upload_template.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
 # Excel file upload for logos
 @app.route('/upload_excel', methods=['GET', 'POST'])
 def upload_excel():
@@ -234,13 +267,22 @@ def upload_excel():
             return redirect(request.url)
 
         try:
-            df = pd.read_excel(excel_file)
-        except Exception as e:
-            flash(f"Error reading Excel file: {e}")
-            return redirect(request.url)
+            if excel_file.filename.lower().endswith('.csv'):
+                df = pd.read_csv(excel_file)
+            else:
+                df = pd.read_excel(excel_file, engine='openpyxl')
+        except Exception:
+            try:
+                if excel_file.filename.lower().endswith('.csv'):
+                    df = pd.read_csv(excel_file)
+                else:
+                    df = pd.read_excel(excel_file, engine='xlrd')
+            except Exception as e:
+                flash(f"Error reading file: {e}")
+                return redirect(request.url)
 
         if 'Brand' not in df.columns or 'Domain' not in df.columns:
-            flash("Excel file must have 'Brand' and 'Domain' columns.")
+            flash("File must have 'Brand' and 'Domain' columns.")
             return redirect(request.url)
 
         for index, row in df.iterrows():
@@ -263,7 +305,7 @@ def upload_excel():
         with open(BRANDS_FILE, 'w') as f:
             json.dump(brands_data, f)
 
-        flash("Logos processed successfully from Excel file.")
+        flash("Logos processed successfully from file.")
         return redirect(url_for('logos_page'))
 
     return render_template('upload_excel.html')
@@ -276,16 +318,21 @@ def characters_page():
     api_search_results = []  # list of formatted results
     combined_characters = characters_data
 
+    # Get selected APIs from form/URL params
+    selected_apis = request.args.getlist('apis') or request.form.getlist('apis')
+    if not selected_apis:
+        selected_apis = ['disney', 'marvel', 'fandom']  # Default to all
+
     if api_query:
         try:
-            # Use the search_characters function to get results from all APIs
-            api_search_results = search_characters(api_query)
+            # Use the search_characters function to get results from selected APIs
+            api_search_results = search_characters(api_query, selected_apis)
         except Exception as e:
             print(f"Error fetching characters: {e}")
             flash("Error fetching characters from APIs")
 
     if local_query:
-        combined_characters = {character: image for character, image in characters_data.items() 
+        combined_characters = {character: data for character, data in characters_data.items()
                              if local_query.lower() in character.lower()}
 
     sort_order = request.args.get('sort', 'asc')
@@ -354,7 +401,7 @@ def dashboard():
         recent = []
 
     # Sample characters (first 8 alphabetically)
-    sample_chars = sorted(characters_data.items(), key=lambda x: x[0].lower())[:8]
+    sample_chars = sorted([(name, data['image']) for name, data in characters_data.items()], key=lambda x: x[0].lower())[:8]
 
     return render_template('dashboard.html',
                            logo_count=logo_count,
@@ -366,18 +413,48 @@ def dashboard():
 def add_character():
     character_name = request.form['character_name']
     image_url = request.form['image_url']
+    source = request.form['source']
 
     local_image_filename = download_image(image_url, character_name)
 
     if local_image_filename:
-        characters_data[character_name] = os.path.join(CHARACTERS_FOLDER, local_image_filename)
+        characters_data[character_name] = {'image': os.path.join(CHARACTERS_FOLDER, local_image_filename), 'source': source}
         with open(CHARACTERS_FILE, 'w') as f:
             json.dump(characters_data, f)
         flash(f"Character '{character_name}' added successfully.")
     else:
         flash(f"Failed to add character '{character_name}'.")
 
-    return redirect(url_for('characters_page'))
+    # Preserve search parameters to maintain results and minimize API calls
+    redirect_params = {}
+
+    # Get current search parameters from the referrer or form data
+    if request.referrer:
+        from urllib.parse import urlparse, parse_qs
+        parsed_url = urlparse(request.referrer)
+        query_params = parse_qs(parsed_url.query)
+
+        # Preserve search query
+        if 'character_search' in query_params:
+            redirect_params['character_search'] = query_params['character_search'][0]
+
+        # Preserve local search
+        if 'local_search' in query_params:
+            redirect_params['local_search'] = query_params['local_search'][0]
+
+        # Preserve selected APIs
+        if 'apis' in query_params:
+            redirect_params['apis'] = query_params['apis']
+
+        # Preserve pagination and sorting
+        if 'page' in query_params:
+            redirect_params['page'] = query_params['page'][0]
+        if 'per_page' in query_params:
+            redirect_params['per_page'] = query_params['per_page'][0]
+        if 'sort' in query_params:
+            redirect_params['sort'] = query_params['sort'][0]
+
+    return redirect(url_for('characters_page', **redirect_params))
 
 @app.route('/delete_character/<character_name>', methods=['POST'])
 def delete_character(character_name):
@@ -388,35 +465,75 @@ def delete_character(character_name):
         flash(f"Character '{character_name}' deleted successfully.")
     else:
         flash(f"Character '{character_name}' not found.")
-    return redirect(url_for('characters_page'))
 
-# Excel file upload for characters
+    # Preserve search parameters to maintain results and minimize API calls
+    redirect_params = {}
+
+    # Get current search parameters from the referrer
+    if request.referrer:
+        from urllib.parse import urlparse, parse_qs
+        parsed_url = urlparse(request.referrer)
+        query_params = parse_qs(parsed_url.query)
+
+        # Preserve search query
+        if 'character_search' in query_params:
+            redirect_params['character_search'] = query_params['character_search'][0]
+
+        # Preserve local search
+        if 'local_search' in query_params:
+            redirect_params['local_search'] = query_params['local_search'][0]
+
+        # Preserve selected APIs
+        if 'apis' in query_params:
+            redirect_params['apis'] = query_params['apis']
+
+        # Preserve pagination and sorting
+        if 'page' in query_params:
+            redirect_params['page'] = query_params['page'][0]
+        if 'per_page' in query_params:
+            redirect_params['per_page'] = query_params['per_page'][0]
+        if 'sort' in query_params:
+            redirect_params['sort'] = query_params['sort'][0]
+
+    return redirect(url_for('characters_page', **redirect_params))
+
+# Excel/CSV file upload for characters
 @app.route('/upload_characters_excel', methods=['GET', 'POST'])
 def upload_characters_excel():
     if request.method == 'POST':
         if 'excel_file' not in request.files:
-            flash("No Excel file provided.")
+            flash("No file provided.")
             return redirect(request.url)
 
-        excel_file = request.files['excel_file']
+        file = request.files['excel_file']
 
-        if excel_file.filename == '':
+        if file.filename == '':
             flash("No file selected.")
             return redirect(request.url)
 
         try:
-            df = pd.read_excel(excel_file)
+            if file.filename.lower().endswith('.csv'):
+                df = pd.read_csv(file)
+            else:
+                df = pd.read_excel(file)
         except Exception as e:
-            flash(f"Error reading Excel file: {e}")
+            flash(f"Error reading file: {e}")
             return redirect(request.url)
 
-        if 'Character' not in df.columns or 'Image' not in df.columns:
-            flash("Excel file must have 'Character' and 'Image' columns.")
+        # Map columns
+        char_col = 'LicensedCharacterName' if 'LicensedCharacterName' in df.columns else 'Character'
+        img_col = 'imageUrl' if 'imageUrl' in df.columns else 'Image'
+
+        if char_col not in df.columns or img_col not in df.columns:
+            flash(f"File must have '{char_col}' and '{img_col}' columns.")
             return redirect(request.url)
 
         for index, row in df.iterrows():
-            character_name = row['Character'].strip()
-            image_url = row['Image'].strip()
+            character_name = str(row[char_col]).strip()
+            image_url = str(row[img_col]).strip()
+
+            if not character_name or not image_url:
+                continue
 
             if character_name in characters_data:
                 print(f"Character {character_name} already exists, skipping...")
@@ -424,14 +541,44 @@ def upload_characters_excel():
 
             local_image_filename = download_image(image_url, character_name)
             if local_image_filename:
-                characters_data[character_name] = os.path.join(CHARACTERS_FOLDER, local_image_filename)
+                characters_data[character_name] = {'image': os.path.join(CHARACTERS_FOLDER, local_image_filename), 'source': 'upload'}
                 print(f"Added {character_name} to the character repository.")
 
         with open(CHARACTERS_FILE, 'w') as f:
             json.dump(characters_data, f)
 
-        flash("Characters processed successfully from Excel file.")
-        return redirect(url_for('characters_page'))
+        flash("Characters processed successfully from file.")
+
+        # Preserve search parameters to maintain results and minimize API calls
+        redirect_params = {}
+
+        # Get current search parameters from the referrer
+        if request.referrer:
+            from urllib.parse import urlparse, parse_qs
+            parsed_url = urlparse(request.referrer)
+            query_params = parse_qs(parsed_url.query)
+
+            # Preserve search query
+            if 'character_search' in query_params:
+                redirect_params['character_search'] = query_params['character_search'][0]
+
+            # Preserve local search
+            if 'local_search' in query_params:
+                redirect_params['local_search'] = query_params['local_search'][0]
+
+            # Preserve selected APIs
+            if 'apis' in query_params:
+                redirect_params['apis'] = query_params['apis']
+
+            # Preserve pagination and sorting
+            if 'page' in query_params:
+                redirect_params['page'] = query_params['page'][0]
+            if 'per_page' in query_params:
+                redirect_params['per_page'] = query_params['per_page'][0]
+            if 'sort' in query_params:
+                redirect_params['sort'] = query_params['sort'][0]
+
+        return redirect(url_for('characters_page', **redirect_params))
 
     return render_template('upload_characters_excel.html')
 
@@ -440,35 +587,46 @@ def upload_characters_excel():
 def download_app():
     return send_from_directory(app.root_path, 'app.py', as_attachment=True)
 
-def search_characters(query):
+def search_characters(query, selected_apis=None):
     results = []
 
-    # Get results from each API
-    disney_results = fetch_disney_character(query)
-    marvel_results = fetch_marvel_character(query)
-    fandom_results = fetch_fandom_character(query)
+    if selected_apis is None:
+        selected_apis = ['disney', 'marvel', 'fandom']
 
-    # Normalize results to a list of {name, image, source}
-    sources = [disney_results, marvel_results, fandom_results]
-    for api_results in sources:
-        if isinstance(api_results, dict):
+    # Get results from selected APIs
+    if 'disney' in selected_apis:
+        disney_results = fetch_disney_character(query)
+        if isinstance(disney_results, dict):
             # Disney returns a mapping of name -> imageUrl
-            for name, image in api_results.items():
+            for name, image in disney_results.items():
                 if name and image:
                     results.append({
                         'name': str(name),
                         'image': str(image),
                         'source': 'disney'
                     })
-        elif isinstance(api_results, list):
-            for result in api_results:
+
+    if 'marvel' in selected_apis:
+        marvel_results = fetch_marvel_character(query)
+        if isinstance(marvel_results, list):
+            for result in marvel_results:
                 if not isinstance(result, dict):
                     continue
-                name = result.get('name') or result.get('title')
-                image = result.get('image') or result.get('imageUrl') or result.get('thumbnail')
-                source = result.get('source') or 'api'
+                name = result.get('name')
+                image = result.get('image')
                 if name and image:
-                    results.append({'name': name, 'image': image, 'source': source})
+                    results.append({'name': name, 'image': image, 'source': 'marvel'})
+
+    if 'fandom' in selected_apis:
+        fandom_results = fetch_fandom_character(query)
+        if isinstance(fandom_results, list):
+            for result in fandom_results:
+                if not isinstance(result, dict):
+                    continue
+                name = result.get('name')
+                image = result.get('image')
+                if name and image:
+                    results.append({'name': name, 'image': image, 'source': 'fandom'})
 
     return results
 

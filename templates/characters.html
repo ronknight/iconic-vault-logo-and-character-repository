@@ -6,14 +6,20 @@
     <div class="controls">
       <form method="get" action="/characters" id="filterForm">
         <div class="field">
-          <input class="input" type="text" name="character_search" value="{{ query }}" placeholder="Search characters (Disney/Marvel/Fandom)..." autocomplete="off">
-          <button class="btn" type="submit"><i class="fas fa-search"></i>&nbsp;Search APIs</button>
+          <input class="input" type="text" name="character_search" value="{{ query }}" placeholder="Search characters..." autocomplete="off">
+          <button class="btn" type="submit" id="searchBtn"><i class="fas fa-search"></i>&nbsp;Search APIs</button>
+        </div>
+        <div class="field">
+          <label style="font-weight:600;margin-right:12px;">Search in:</label>
+          <label style="margin-right:8px;"><input type="checkbox" name="apis" value="disney" {% if 'disney' in request.args.getlist('apis') or not request.args.getlist('apis') %}checked{% endif %}> Disney</label>
+          <label style="margin-right:8px;"><input type="checkbox" name="apis" value="marvel" {% if 'marvel' in request.args.getlist('apis') or not request.args.getlist('apis') %}checked{% endif %}> Marvel</label>
+          <label style="margin-right:8px;"><input type="checkbox" name="apis" value="fandom" {% if 'fandom' in request.args.getlist('apis') or not request.args.getlist('apis') %}checked{% endif %}> Fandom</label>
         </div>
         <div class="field">
           <input class="input" type="text" name="local_search" value="{{ local_search }}" placeholder="Search saved characters..." autocomplete="off">
           <select class="select" name="sort" id="sort" onchange="document.getElementById('page').value=1; this.form.submit();">
-            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>A → Z</option>
-            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Z → A</option>
+            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>A to Z</option>
+            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Z to A</option>
           </select>
           <select class="select" name="per_page" id="per_page" onchange="document.getElementById('page').value=1; this.form.submit();">
             {% set p = per_page or 24 %}
@@ -29,9 +35,9 @@
     </div>
     <div class="meta">
       {% if total %}
-        Showing {{ start_index }}–{{ end_index }} of {{ total }}
+        Showing {{ start_index }}-{{ end_index }} of {{ total }}
       {% else %}
-        No saved characters yet — add from search or upload.
+        No saved characters yet - add from search or upload.
       {% endif %}
     </div>
   </div>
@@ -43,7 +49,7 @@
         {% for character in search_results %}
         <div class="card" title="{{ character.name }}">
           <div class="thumb" style="aspect-ratio:1/1"><img loading="lazy" src="{{ character.image }}" alt="{{ character.name }}"></div>
-          <div class="brandname">{{ character.name }}</div>
+          <div class="brandname">{{ character.name }} <img src="/static/images/{{ character.source }}-icon.png" alt="{{ character.source }}" class="source-icon"></div>
           <div class="actions">
             <form action="{{ url_for('add_character') }}" method="POST">
               <input type="hidden" name="character_name" value="{{ character.name }}">
@@ -64,14 +70,14 @@
     <h2 style="margin:0 0 8px 0;font-size:18px;">Saved Characters</h2>
     {% if characters and characters|length > 0 %}
       <div class="grid">
-        {% for character, image in characters.items() %}
-        <div class="card" title="{{ character }}">
-          <div class="thumb" style="aspect-ratio:1/1"><img loading="lazy" src="{{ image }}" alt="{{ character }}"></div>
-          <div class="brandname">{{ character }}</div>
+        {% for name, data in characters.items() %}
+        <div class="card" title="{{ name }}">
+          <div class="thumb" style="aspect-ratio:1/1"><img loading="lazy" src="{{ data.image }}" alt="{{ name }}"></div>
+          <div class="brandname">{{ name }} <img src="/static/images/{{ data.source }}-icon.png" alt="{{ data.source }}" class="source-icon"></div>
           <div class="actions">
-            <a href="{{ image }}" target="_blank" class="iconbtn view" title="View"><i class="fas fa-eye"></i></a>
-            <a href="{{ image }}" download class="iconbtn download" title="Download"><i class="fas fa-download"></i></a>
-            <form action="{{ url_for('delete_character', character_name=character) }}" method="POST" onsubmit="return confirm('Delete character \"{{ character }}\"? This cannot be undone.');">
+            <a href="{{ data.image }}" target="_blank" class="iconbtn view" title="View"><i class="fas fa-eye"></i></a>
+            <a href="{{ data.image }}" download class="iconbtn download" title="Download"><i class="fas fa-download"></i></a>
+            <form action="{{ url_for('delete_character', character_name=name) }}" method="POST" onsubmit='return confirm("Delete character \"" + "{{ name }}" + "\"? This cannot be undone.");'>
               <button type="submit" class="iconbtn delete" title="Delete"><i class="fas fa-trash"></i></button>
             </form>
           </div>
@@ -80,16 +86,23 @@
       </div>
       <div class="pager">
         <div class="left">
+          {% set selected_apis = request.args.getlist('apis') %}
+          {% set prev_page = page - 1 %}
+          {% set next_page = page + 1 %}
+          {% set api_params = '' %}
+          {% for api in selected_apis %}
+            {% set api_params = api_params ~ '&apis=' ~ api %}
+          {% endfor %}
           {% if page > 1 %}
-            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=1) }}" title="First" aria-label="First"><i class="fas fa-angles-left"></i></a>
-            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=page-1) }}" title="Previous" aria-label="Previous"><i class="fas fa-chevron-left"></i></a>
+            <a class="pagebtn" href="/characters?page=1&character_search={{ query }}&local_search={{ local_search }}&sort={{ sort_order }}&per_page={{ per_page }}{{ api_params }}" title="First" aria-label="First"><i class="fas fa-angles-left"></i></a>
+            <a class="pagebtn" href="/characters?page={{ prev_page }}&character_search={{ query }}&local_search={{ local_search }}&sort={{ sort_order }}&per_page={{ per_page }}{{ api_params }}" title="Previous" aria-label="Previous"><i class="fas fa-chevron-left"></i></a>
           {% else %}
             <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="First"><i class="fas fa-angles-left"></i></span>
             <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Previous"><i class="fas fa-chevron-left"></i></span>
           {% endif %}
 
           {% if 1 not in pages %}
-            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=1) }}">1</a>
+            <a class="pagebtn" href="/characters?page=1&character_search={{ query }}&local_search={{ local_search }}&sort={{ sort_order }}&per_page={{ per_page }}{{ api_params }}">1</a>
             <span class="pagebtn" style="pointer-events:none;">…</span>
           {% endif %}
 
@@ -97,28 +110,39 @@
             {% if pnum == page %}
               <span class="pagebtn active">{{ pnum }}</span>
             {% else %}
-              <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=pnum) }}">{{ pnum }}</a>
+              <a class="pagebtn" href="/characters?page={{ pnum }}&character_search={{ query }}&local_search={{ local_search }}&sort={{ sort_order }}&per_page={{ per_page }}{{ api_params }}">{{ pnum }}</a>
             {% endif %}
           {% endfor %}
 
           {% if total_pages not in pages and total_pages > 0 %}
             <span class="pagebtn" style="pointer-events:none;">…</span>
-            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=total_pages) }}">{{ total_pages }}</a>
+            <a class="pagebtn" href="/characters?page={{ total_pages }}&character_search={{ query }}&local_search={{ local_search }}&sort={{ sort_order }}&per_page={{ per_page }}{{ api_params }}">{{ total_pages }}</a>
           {% endif %}
 
           {% if page < total_pages %}
-            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=page+1) }}" title="Next" aria-label="Next"><i class="fas fa-chevron-right"></i></a>
-            <a class="pagebtn" href="{{ url_for('characters_page', character_search=query, local_search=local_search, sort=sort_order, per_page=per_page, page=total_pages) }}" title="Last" aria-label="Last"><i class="fas fa-angles-right"></i></a>
+            <a class="pagebtn" href="/characters?page={{ next_page }}&character_search={{ query }}&local_search={{ local_search }}&sort={{ sort_order }}&per_page={{ per_page }}{{ api_params }}" title="Next" aria-label="Next"><i class="fas fa-chevron-right"></i></a>
+            <a class="pagebtn" href="/characters?page={{ total_pages }}&character_search={{ query }}&local_search={{ local_search }}&sort={{ sort_order }}&per_page={{ per_page }}{{ api_params }}" title="Last" aria-label="Last"><i class="fas fa-angles-right"></i></a>
           {% else %}
             <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Next"><i class="fas fa-chevron-right"></i></span>
             <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Last"><i class="fas fa-angles-right"></i></span>
           {% endif %}
         </div>
-        <div class="right"><a class="link" href="/">Back to Home</a></div>
+        <div class="right">
+          <a class="btn ghost" href="/logos"><i class="fas fa-images"></i> Logos</a>
+          <a class="btn ghost" href="/"><i class="fas fa-home"></i> Home</a>
+        </div>
       </div>
     {% else %}
       <div class="empty">No characters found. Try adding some from search above.</div>
-      <div class="meta"><a class="link" href="/">Back to Home</a></div>
+      <div class="meta"><a class="btn ghost" href="/"><i class="fas fa-home"></i> Home</a></div>
     {% endif %}
   </div>
+
+  <script>
+    document.getElementById('filterForm').addEventListener('submit', function() {
+      const btn = document.getElementById('searchBtn');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Searching...';
+      btn.disabled = true;
+    });
+  </script>
 {% endblock %}

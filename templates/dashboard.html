@@ -33,7 +33,7 @@
     {% else %}
       <div class="empty">No recent logos yet.</div>
     {% endif %}
-    <div class="meta"><a class="link" href="{{ url_for('logos_page') }}">Go to Logos</a></div>
+    <div class="meta"><a class="btn ghost" href="{{ url_for('logos_page') }}"><i class="fas fa-images"></i> Logos</a></div>
   </div>
 
   <div class="panel">
@@ -50,7 +50,6 @@
     {% else %}
       <div class="empty">No characters saved yet.</div>
     {% endif %}
-    <div class="meta"><a class="link" href="{{ url_for('characters_page') }}">Go to Characters</a></div>
+    <div class="meta"><a class="btn ghost" href="{{ url_for('characters_page') }}"><i class="fas fa-user-astronaut"></i> Characters</a></div>
   </div>
 {% endblock %}
-
