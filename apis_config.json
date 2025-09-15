@@ -17,6 +17,13 @@
       "module": "apis.fandom_api",
       "function": "fetch_fandom_character",
       "keys": []
+    },
+    "brandfetch": {
+      "name": "Brandfetch (Logos)",
+      "module": "brandfetch",
+      "function": "search_brands",
+      "keys": ["BRANDFETCH_API_KEY"],
+      "note": "Used for brand logo fetching, not character search"
     }
   }
 }

@@ -379,7 +379,7 @@ def characters_page():
         pages=pages,
         start_index=start_index,
         end_index=end_index,
-        available_apis=get_available_apis(),
+        available_apis=[api for api in get_available_apis() if api != 'brandfetch'],
     )
 
 @app.route('/dashboard')
@@ -721,11 +721,12 @@ def search_characters(query, selected_apis=None):
     config = load_api_config()
 
     if selected_apis is None:
-        selected_apis = list(config.get('apis', {}).keys())
+        # Only include APIs that are for character search (exclude brandfetch)
+        selected_apis = [api_id for api_id in config.get('apis', {}).keys() if api_id != 'brandfetch']
 
     # Filter to only available APIs (those with keys set)
     available_apis = get_available_apis()
-    selected_apis = [api for api in selected_apis if api in available_apis]
+    selected_apis = [api for api in selected_apis if api in available_apis and api != 'brandfetch']
 
     for api_id in selected_apis:
         api_results = call_api_function(api_id, query)
