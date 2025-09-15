@@ -90,35 +90,54 @@ def fetch_marvel_character(character_name):
             return results
 
         # Fallback: broader search by prefix if exact name produced nothing
-        params_prefix = {
-            "nameStartsWith": character_name[0].upper() if character_name else "",
-            "limit": 100,
-            "ts": ts,
-            "apikey": MARVEL_PUBLIC_KEY,
-            "hash": hash_result
-        }
-        response = session.get(base_url, params=params_prefix, timeout=DEFAULT_TIMEOUT)
-        if response.status_code != 200:
-            print(f"Marvel API error (prefix): {response.status_code}")
-            return []
-        json_data = response.json()
-        data = json_data.get("data", {})
-        results_list = data.get("results", [])
-        for character in results_list:
-            name = character.get("name", "")
-            if not name.lower().startswith(character_name.lower()):
+        # Try multiple search strategies
+        search_terms = [
+            character_name,  # Full name
+            character_name.split()[0] if character_name.split() else "",  # First word
+            character_name.split()[-1] if len(character_name.split()) > 1 else ""  # Last word
+        ]
+
+        for search_term in search_terms:
+            if not search_term:
                 continue
-            thumbnail = character.get("thumbnail") or {}
-            path = thumbnail.get('path', '')
-            if not path or 'image_not_available' in path:
+
+            params_prefix = {
+                "nameStartsWith": search_term[0].upper(),
+                "limit": 100,
+                "ts": ts,
+                "apikey": MARVEL_PUBLIC_KEY,
+                "hash": hash_result
+            }
+            response = session.get(base_url, params=params_prefix, timeout=DEFAULT_TIMEOUT)
+            if response.status_code != 200:
+                print(f"Marvel API error (prefix): {response.status_code}")
                 continue
-            image_url = _variant_url(thumbnail, 'portrait_uncanny') or _variant_url(thumbnail, 'standard_large')
-            if image_url:
-                results.append({
-                    "name": name,
-                    "image": image_url,
-                    "source": "marvel"
-                })
+
+            json_data = response.json()
+            data = json_data.get("data", {})
+            results_list = data.get("results", [])
+
+            for character in results_list:
+                name = character.get("name", "")
+                # Check if search term appears anywhere in the name (case-insensitive)
+                if (character_name.lower() in name.lower() or
+                    any(term.lower() in name.lower() for term in character_name.split())):
+                    thumbnail = character.get("thumbnail") or {}
+                    path = thumbnail.get('path', '')
+                    if not path or 'image_not_available' in path:
+                        continue
+                    image_url = _variant_url(thumbnail, 'portrait_uncanny') or _variant_url(thumbnail, 'standard_large')
+                    if image_url:
+                        results.append({
+                            "name": name,
+                            "image": image_url,
+                            "source": "marvel"
+                        })
+
+            # If we found results, return them
+            if results:
+                return results
+
         return results
     except Exception as e:
         print("Error fetching Marvel character:", e)
