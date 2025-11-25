@@ -1,210 +1,139 @@
 {% extends 'base.html' %}
-{% block title %}Brand Logo Repository · Iconic Vault{% endblock %}
+{% block title %}Brand Logos - Iconic Vault{% endblock %}
 {% block content %}
-  <div class="panel">
-    <h2 style="margin:0 0 8px 0;font-size:18px;">Brand Logo Repository</h2>
-    <div class="controls">
-      <form method="get" action="/logos" id="filterForm">
-        <div class="field">
-          <input class="input" type="text" name="q" id="q" value="{{ query }}" placeholder="Search brands..." autocomplete="off">
-          <button class="btn" type="submit"><i class="fas fa-search"></i>&nbsp;Search</button>
-          <a class="btn ghost" href="/logos">Clear</a>
-        </div>
-        <div class="field">
-          <select class="select" name="sort" id="sort">
-            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>A → Z</option>
-            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Z → A</option>
-          </select>
-          <select class="select" name="per_page" id="per_page">
-            {% set p = per_page or 24 %}
-            <option value="12" {% if p == 12 %}selected{% endif %}>12 / page</option>
-            <option value="24" {% if p == 24 %}selected{% endif %}>24 / page</option>
-            <option value="48" {% if p == 48 %}selected{% endif %}>48 / page</option>
-            <option value="96" {% if p == 96 %}selected{% endif %}>96 / page</option>
-          </select>
-          <input type="hidden" name="page" id="page" value="{{ page or 1 }}">
-        </div>
+<div class="flex flex-col gap-4 mb-4">
+  <div class="flex items-center justify-between" style="flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1>Brand Logos</h1>
+      <p class="text-muted">Manage your collection of brand assets.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{{ url_for('upload_excel') }}" class="btn"><i class="fas fa-file-import"></i> Import</a>
+      <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data"
+        style="display: flex; gap: 0.5rem;">
+        <input type="text" name="brand_name" placeholder="Brand Name" class="input" required style="width: 150px;">
+        <input type="file" name="file" class="input" style="padding-top: 0.3rem;" required>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Upload</button>
       </form>
-      <div class="upload">
-        <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
-          <input class="input" type="text" name="brand_name" placeholder="Brand name" required>
-          <input type="file" name="file" id="fileInput" required>
-          <button class="btn" type="submit"><i class="fas fa-upload"></i>&nbsp;Upload</button>
-        </form>
-        <a href="{{ url_for('upload_excel') }}" class="btn ghost" title="Bulk import via Excel">
-          <i class="fas fa-file-excel"></i>&nbsp;Import Excel
-        </a>
-      </div>
     </div>
   </div>
 
-  <div class="panel">
-    <form method="get" action="/logos" id="bfForm" class="controls">
-      <div class="field">
-        <input class="input" type="text" name="bf" id="bf" value="{{ bf or '' }}" placeholder="Find a brand via Brandfetch (name or domain)">
-        <button class="btn" type="submit"><i class="fas fa-magnifying-glass"></i>&nbsp;Find Brand</button>
+  <div class="card p-4">
+    <form method="get" class="flex gap-4" style="flex-wrap: wrap; align-items: end;">
+      <div class="flex flex-col gap-2" style="flex: 1; min-width: 200px;">
+        <label class="text-sm font-bold">Search Local</label>
+        <div class="flex gap-2">
+          <input type="text" name="q" value="{{ query }}" placeholder="Search stored logos..." class="input w-full">
+          {% if query %}
+          <a href="{{ url_for('logos_page') }}" class="btn btn-ghost" title="Clear search"><i
+              class="fas fa-times"></i></a>
+          {% endif %}
+        </div>
       </div>
-      <input type="hidden" name="q" value="{{ query }}">
-      <input type="hidden" name="sort" value="{{ sort_order }}">
-      <input type="hidden" name="per_page" value="{{ per_page }}">
+
+      <div class="flex flex-col gap-2" style="flex: 1; min-width: 200px;">
+        <label class="text-sm font-bold">Search Brandfetch</label>
+        <div class="flex gap-2">
+          <input type="text" name="bf" value="{{ bf }}" placeholder="Search Brandfetch..." class="input w-full">
+          {% if bf %}
+          <a href="{{ url_for('logos_page') }}" class="btn btn-ghost" title="Clear search"><i
+              class="fas fa-times"></i></a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-bold">Sort</label>
+        <select name="sort" class="select" onchange="this.form.submit()">
+          <option value="asc" {% if sort_order=='asc' %}selected{% endif %}>A-Z</option>
+          <option value="desc" {% if sort_order=='desc' %}selected{% endif %}>Z-A</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Search</button>
     </form>
-    {% if bf_results and bf_results|length > 0 %}
-      <div class="meta">Brandfetch results for "{{ bf }}"</div>
-      <div class="grid" style="margin-top:12px;">
-        {% for r in bf_results %}
-        <div class="card" title="{{ r.name }}">
-          <div class="thumb">
-            <img loading="lazy" src="{{ r.logo_url }}" alt="{{ r.name }}">
-          </div>
-          <div class="brandname">{{ r.name }}</div>
-          <div class="actions">
-            <a class="iconbtn view" href="{{ r.logo_url }}" target="_blank" title="View on Brandfetch"><i class="fas fa-eye"></i></a>
-            <form action="{{ url_for('import_brandfetch') }}" method="POST">
-              <input type="hidden" name="brand_name" value="{{ r.name }}">
-              <input type="hidden" name="brand_domain" value="{{ r.domain }}">
-              <button type="submit" class="iconbtn download" title="Import to Repository"><i class="fas fa-download"></i></button>
-            </form>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    {% elif bf %}
-      <div class="empty">No Brandfetch results found for "{{ bf }}".</div>
-    {% endif %}
   </div>
+</div>
 
-  <div class="meta">
-    {% if total %}
-      Showing {{ start_index }}–{{ end_index }} of {{ total }}
-    {% else %}
-      No logos yet — upload to get started.
-    {% endif %}
+{% if bf_results %}
+<div class="mb-4">
+  <h3 class="mb-4">Brandfetch Results</h3>
+  <div class="grid grid-auto-fit gap-4">
+    {% for result in bf_results %}
+    <div class="card">
+      <div class="thumb-container">
+        <img src="{{ result.logo_url }}" alt="{{ result.name }}" class="thumb-img">
+      </div>
+      <div class="card-body flex flex-col gap-2">
+        <div class="font-bold text-center">{{ result.name }}</div>
+        <div class="text-muted text-sm text-center">{{ result.domain }}</div>
+        <form action="{{ url_for('import_brandfetch') }}" method="post" class="w-full mt-2">
+          <input type="hidden" name="brand_name" value="{{ result.name }}">
+          <input type="hidden" name="brand_domain" value="{{ result.domain }}">
+          <button type="submit" class="btn btn-primary w-full"><i class="fas fa-download"></i> Import</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
   </div>
+  <hr style="margin: 2rem 0; border-color: var(--border-color);">
+</div>
+{% endif %}
 
-  <div class="panel">
-    {% if logos and logos|length > 0 %}
-      <div class="grid">
-        {% for logo, brand in logos.items() %}
-        <div class="card" title="{{ brand }}">
-          <div class="thumb">
-            <img loading="lazy" src="{{ url_for('uploaded_file', filename=logo) }}" alt="{{ brand }}">
-          </div>
-          <div class="brandname">{{ brand }}</div>
-          <div class="actions">
-            <a class="iconbtn view" href="{{ url_for('uploaded_file', filename=logo) }}" target="_blank" title="View">
-              <i class="fas fa-eye"></i>
-            </a>
-            <a class="iconbtn download" href="{{ url_for('download_logo', filename=logo) }}" download title="Download">
-              <i class="fas fa-download"></i>
-            </a>
-            <form action="{{ url_for('delete_logo', filename=logo) }}" method="POST" onsubmit="return confirmDelete('{{ brand }}');">
-              <button type="submit" class="iconbtn delete" title="Delete">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            </form>
-          </div>
-        </div>
-        {% endfor %}
+{% if logos %}
+<div class="grid grid-auto-fit gap-4">
+  {% for filename, brand_name in logos.items() %}
+  <div class="card">
+    <div class="thumb-container">
+      <img src="{{ url_for('uploaded_file', filename=filename) }}" alt="{{ brand_name }}" class="thumb-img">
+    </div>
+    <div class="card-body flex flex-col gap-2">
+      <div class="font-bold text-center truncate" title="{{ brand_name }}">{{ brand_name }}</div>
+      <div class="flex gap-2 justify-center mt-2">
+        <a href="{{ url_for('uploaded_file', filename=filename) }}" target="_blank" class="btn btn-ghost btn-icon"
+          title="View"><i class="fas fa-eye" style="color: var(--color-info);"></i></a>
+        <a href="{{ url_for('download_logo', filename=filename) }}" class="btn btn-ghost btn-icon" title="Download"><i
+            class="fas fa-download" style="color: var(--color-success);"></i></a>
+        <form action="{{ url_for('delete_logo', filename=filename) }}" method="post"
+          onsubmit="return confirm('Delete this logo?');" style="display:inline;">
+          <button type="submit" class="btn btn-ghost btn-icon" title="Delete"><i class="fas fa-trash"
+              style="color: var(--color-danger);"></i></button>
+        </form>
       </div>
-
-      <div class="pager">
-        <div class="left">
-          {% if page > 1 %}
-            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=1) }}" title="First" aria-label="First"><i class="fas fa-angles-left"></i></a>
-            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=page-1) }}" title="Previous" aria-label="Previous"><i class="fas fa-chevron-left"></i></a>
-          {% else %}
-            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="First"><i class="fas fa-angles-left"></i></span>
-            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Previous"><i class="fas fa-chevron-left"></i></span>
-          {% endif %}
-
-          {% if 1 not in pages %}
-            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=1) }}">1</a>
-            <span class="pagebtn" style="pointer-events:none;">…</span>
-          {% endif %}
-
-          {% for pnum in pages %}
-            {% if pnum == page %}
-              <span class="pagebtn active">{{ pnum }}</span>
-            {% else %}
-              <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=pnum) }}">{{ pnum }}</a>
-            {% endif %}
-          {% endfor %}
-
-          {% if total_pages not in pages and total_pages > 0 %}
-            <span class="pagebtn" style="pointer-events:none;">…</span>
-            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=total_pages) }}">{{ total_pages }}</a>
-          {% endif %}
-
-          {% if page < total_pages %}
-            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=page+1) }}" title="Next" aria-label="Next"><i class="fas fa-chevron-right"></i></a>
-            <a class="pagebtn" href="{{ url_for('logos_page', q=query, sort=sort_order, per_page=per_page, page=total_pages) }}" title="Last" aria-label="Last"><i class="fas fa-angles-right"></i></a>
-          {% else %}
-            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Next"><i class="fas fa-chevron-right"></i></span>
-            <span class="pagebtn" style="pointer-events:none;opacity:.5;" title="Last"><i class="fas fa-angles-right"></i></span>
-          {% endif %}
-        </div>
-        <div class="right">
-          <a class="btn ghost" href="/characters"><i class="fas fa-user-astronaut"></i> Characters</a>
-          <a class="btn ghost" href="/"><i class="fas fa-home"></i> Home</a>
-        </div>
-      </div>
-    {% else %}
-      <div class="empty">
-        <p><i class="fas fa-image" style="font-size:40px;color:#cbd5e1;"></i></p>
-        <p>No logos found. Try adjusting your search or upload a new logo.</p>
-      </div>
-      <div class="meta"><a class="btn ghost" href="/"><i class="fas fa-home"></i> Home</a></div>
-    {% endif %}
+    </div>
   </div>
-{% endblock %}
+  {% endfor %}
+</div>
 
-{% block scripts %}
-<script>
-  const q = document.getElementById('q');
-  const sort = document.getElementById('sort');
-  const perPage = document.getElementById('per_page');
-  const pageInput = document.getElementById('page');
-  const form = document.getElementById('filterForm');
-  const bfInput = document.getElementById('bf');
+<!-- Pagination -->
+<div class="flex flex-col items-center gap-4 mt-4">
+  <div class="text-sm text-muted">
+    Showing {{ start_index }}-{{ end_index }} of {{ total }} logos
+  </div>
+  {% if total_pages > 1 %}
+  <div class="pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('logos_page', page=page-1, q=query, sort=sort_order, bf=bf) }}" class="page-item"><i
+        class="fas fa-chevron-left"></i></a>
+    {% endif %}
 
-  let timer;
-  function triggerSubmit() {
-    pageInput.value = 1; // reset to first page on filters change
-    form.submit();
-  }
-  q && q.addEventListener('input', () => {
-    clearTimeout(timer);
-    timer = setTimeout(triggerSubmit, 350);
-  });
-  sort && sort.addEventListener('change', triggerSubmit);
-  perPage && perPage.addEventListener('change', triggerSubmit);
-  bfInput && bfInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      document.getElementById('bfForm').submit();
-    }
-  });
+    {% for p in pages %}
+    <a href="{{ url_for('logos_page', page=p, q=query, sort=sort_order, bf=bf) }}"
+      class="page-item {% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
 
-  function confirmDelete(name) {
-    return confirm(`Delete logo for "${name}"? This cannot be undone.`);
-  }
+    {% if page < total_pages %} <a href="{{ url_for('logos_page', page=page+1, q=query, sort=sort_order, bf=bf) }}"
+      class="page-item"><i class="fas fa-chevron-right"></i></a>
+      {% endif %}
+  </div>
+  {% endif %}
+</div>
 
-  const uploadForm = document.getElementById('uploadForm');
-  const fileInput = document.getElementById('fileInput');
-  if (uploadForm && fileInput) {
-    ['dragover','dragleave','drop'].forEach(evt => {
-      uploadForm.addEventListener(evt, e => {
-        e.preventDefault(); e.stopPropagation();
-        if (evt === 'dragover') uploadForm.classList.add('dropzone','dragover');
-        if (evt === 'dragleave') uploadForm.classList.remove('dragover');
-        if (evt === 'drop') {
-          uploadForm.classList.remove('dragover');
-          const dt = e.dataTransfer;
-          if (dt && dt.files && dt.files.length) {
-            fileInput.files = dt.files;
-          }
-        }
-      });
-    });
-  }
-</script>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="fas fa-images"></i></div>
+  <h3>No logos found</h3>
+  <p>Try adjusting your search or upload a new logo.</p>
+</div>
+{% endif %}
 {% endblock %}

@@ -1,14 +1,63 @@
 {% extends 'base.html' %}
 {% block title %}Iconic Vault{% endblock %}
 {% block content %}
-  <div class="panel" style="margin-top:32px;">
-    <h1 style="margin:0 0 8px 0; font-size:28px;">Iconic Vault</h1>
-    <p class="meta">Manage brand logos and licensed characters with fast search, clean browsing, Brandfetch imports, and Excel bulk upload.</p>
-    <div class="controls" style="margin-top:12px;">
-      <a class="btn primary" href="{{ url_for('logos_page') }}"><i class="fas fa-images"></i> Brand Logos</a>
-      <a class="btn" href="{{ url_for('characters_page') }}"><i class="fas fa-user-astronaut"></i> Licensed Characters</a>
-      <a class="btn" href="{{ url_for('dashboard') }}"><i class="fas fa-chart-pie"></i> Dashboard</a>
-      <a class="btn" href="{{ url_for('upload_excel') }}"><i class="fas fa-file-excel"></i> Import Excel</a>
+<div class="flex flex-col gap-4" style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
+  <h1
+    style="font-size: 3rem; background: linear-gradient(to right, var(--color-primary), var(--color-info)); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+    Iconic Vault</h1>
+  <p class="text-muted" style="font-size: 1.25rem; max-width: 600px; margin: 0 auto;">
+    Manage brand logos and licensed characters with fast search, clean browsing, Brandfetch imports, and Excel bulk
+    upload.
+  </p>
+</div>
+
+<div class="grid grid-auto-fit gap-4">
+  <a href="{{ url_for('logos_page') }}" class="card" style="text-decoration: none; color: inherit;">
+    <div class="card-body flex flex-col items-center gap-4" style="padding: 2rem;">
+      <div style="font-size: 3rem; color: var(--color-primary); opacity: 0.8;">
+        <i class="fas fa-images"></i>
+      </div>
+      <div style="text-align: center;">
+        <h3 style="margin-bottom: 0.5rem;">Brand Logos</h3>
+        <p class="text-muted text-sm">Browse, search, and manage your collection of brand logos.</p>
+      </div>
     </div>
-  </div>
+  </a>
+
+  <a href="{{ url_for('characters_page') }}" class="card" style="text-decoration: none; color: inherit;">
+    <div class="card-body flex flex-col items-center gap-4" style="padding: 2rem;">
+      <div style="font-size: 3rem; color: var(--color-success); opacity: 0.8;">
+        <i class="fas fa-user-astronaut"></i>
+      </div>
+      <div style="text-align: center;">
+        <h3 style="margin-bottom: 0.5rem;">Licensed Characters</h3>
+        <p class="text-muted text-sm">Explore and manage licensed characters from various APIs.</p>
+      </div>
+    </div>
+  </a>
+
+  <a href="{{ url_for('dashboard') }}" class="card" style="text-decoration: none; color: inherit;">
+    <div class="card-body flex flex-col items-center gap-4" style="padding: 2rem;">
+      <div style="font-size: 3rem; color: var(--color-info); opacity: 0.8;">
+        <i class="fas fa-chart-pie"></i>
+      </div>
+      <div style="text-align: center;">
+        <h3 style="margin-bottom: 0.5rem;">Dashboard</h3>
+        <p class="text-muted text-sm">View statistics and recent activity in your vault.</p>
+      </div>
+    </div>
+  </a>
+
+  <a href="{{ url_for('upload_excel') }}" class="card" style="text-decoration: none; color: inherit;">
+    <div class="card-body flex flex-col items-center gap-4" style="padding: 2rem;">
+      <div style="font-size: 3rem; color: var(--hue-warning); opacity: 0.8;">
+        <i class="fas fa-file-excel"></i>
+      </div>
+      <div style="text-align: center;">
+        <h3 style="margin-bottom: 0.5rem;">Import Excel</h3>
+        <p class="text-muted text-sm">Bulk import logos and characters via Excel or CSV.</p>
+      </div>
+    </div>
+  </a>
+</div>
 {% endblock %}

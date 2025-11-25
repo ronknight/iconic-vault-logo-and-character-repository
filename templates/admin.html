@@ -4,103 +4,134 @@
 
 {% block head_extra %}
 <style>
-.success-text { color: var(--success); }
-.danger-text { color: var(--danger); }
+  .success-text {
+    color: var(--color-success);
+  }
+
+  .danger-text {
+    color: var(--color-danger);
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="panel">
-  <h2><i class="fas fa-cogs"></i> API Management</h2>
-  <p>Manage API services for character search. Add new APIs, configure keys, and monitor status.</p>
+<div class="mb-4">
+  <h1>API Management</h1>
+  <p class="text-muted">Manage API services for character search. Add new APIs, configure keys, and monitor status.</p>
 </div>
 
-<div class="panel">
-  <h3><i class="fas fa-plus"></i> Add New API</h3>
-  <form method="post" style="display: grid; gap: 12px; max-width: 600px;">
-    <input type="hidden" name="action" value="add_api">
-    <div class="field">
-      <label for="api_id">API ID:</label>
-      <input type="text" id="api_id" name="api_id" class="input" placeholder="e.g., starwars" required>
+<div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-plus"></i> Add New API</h3>
     </div>
-    <div class="field">
-      <label for="api_name">Display Name:</label>
-      <input type="text" id="api_name" name="api_name" class="input" placeholder="e.g., Star Wars API" required>
-    </div>
-    <div class="field">
-      <label for="module">Module:</label>
-      <input type="text" id="module" name="module" class="input" placeholder="e.g., apis.starwars_api" required>
-    </div>
-    <div class="field">
-      <label for="function">Function:</label>
-      <input type="text" id="function" name="function" class="input" placeholder="e.g., fetch_starwars_character" required>
-    </div>
-    <div class="field">
-      <label for="keys">Required Keys (comma-separated):</label>
-      <input type="text" id="keys" name="keys" class="input" placeholder="e.g., STARWARS_API_KEY">
-    </div>
-    <button type="submit" class="btn primary"><i class="fas fa-plus"></i> Add API</button>
-  </form>
-</div>
-
-<div class="panel">
-  <h3><i class="fas fa-key"></i> API Keys Configuration</h3>
-  <form method="post" style="display: grid; gap: 12px; max-width: 600px;">
-    <input type="hidden" name="action" value="update_keys">
-    {% for api in apis %}
-      {% for key in api.required_keys %}
-        <div class="field">
-          <label for="key_{{ key }}">{{ key }}:</label>
-          <input type="password" id="key_{{ key }}" name="key_{{ key }}" class="input" placeholder="Enter {{ key }}" value="{{ '' if not request.method == 'POST' else request.form.get('key_' + key, '') }}">
+    <div class="card-body">
+      <form method="post" class="flex flex-col gap-4">
+        <input type="hidden" name="action" value="add_api">
+        <div class="flex flex-col gap-2">
+          <label for="api_id" class="text-sm font-bold">API ID</label>
+          <input type="text" id="api_id" name="api_id" class="input w-full" placeholder="e.g., starwars" required>
         </div>
-      {% endfor %}
-    {% endfor %}
-    <button type="submit" class="btn primary"><i class="fas fa-save"></i> Update Keys</button>
-  </form>
+        <div class="flex flex-col gap-2">
+          <label for="api_name" class="text-sm font-bold">Display Name</label>
+          <input type="text" id="api_name" name="api_name" class="input w-full" placeholder="e.g., Star Wars API"
+            required>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="module" class="text-sm font-bold">Module</label>
+          <input type="text" id="module" name="module" class="input w-full" placeholder="e.g., apis.starwars_api"
+            required>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="function" class="text-sm font-bold">Function</label>
+          <input type="text" id="function" name="function" class="input w-full"
+            placeholder="e.g., fetch_starwars_character" required>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="keys" class="text-sm font-bold">Required Keys (comma-separated)</label>
+          <input type="text" id="keys" name="keys" class="input w-full" placeholder="e.g., STARWARS_API_KEY">
+        </div>
+        <button type="submit" class="btn btn-primary w-full"><i class="fas fa-plus"></i> Add API</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-key"></i> API Keys Configuration</h3>
+    </div>
+    <div class="card-body">
+      <form method="post" class="flex flex-col gap-4">
+        <input type="hidden" name="action" value="update_keys">
+        {% for api in apis %}
+        {% for key in api.required_keys %}
+        <div class="flex flex-col gap-2">
+          <label for="key_{{ key }}" class="text-sm font-bold">{{ key }}</label>
+          <input type="password" id="key_{{ key }}" name="key_{{ key }}" class="input w-full"
+            placeholder="Enter {{ key }}"
+            value="{{ '' if not request.method == 'POST' else request.form.get('key_' + key, '') }}">
+        </div>
+        {% endfor %}
+        {% endfor %}
+        <button type="submit" class="btn btn-primary w-full"><i class="fas fa-save"></i> Update Keys</button>
+      </form>
+    </div>
+  </div>
 </div>
 
-<div class="panel">
-  <h3><i class="fas fa-list"></i> Configured APIs</h3>
-  {% if apis %}
-    <div style="display: grid; gap: 12px;">
+<div class="card mt-4">
+  <div class="card-header">
+    <h3><i class="fas fa-list"></i> Configured APIs</h3>
+  </div>
+  <div class="card-body">
+    {% if apis %}
+    <div class="grid gap-4">
       {% for api in apis %}
-        <div class="card" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 16px;">
-          <div>
-            <strong>{{ api.name }}</strong> ({{ api.id }})<br>
-            <small style="color: var(--muted);">
-              Module: {{ api.module }} | Function: {{ api.function }}<br>
-              Keys: {{ api.required_keys|join(', ') or 'None' }}<br>
-              Status: <span class="{% if api.status == 'available' %}success-text{% else %}danger-text{% endif %}">{{ api.status|title }}</span>
-            </small>
+      <div class="flex items-center justify-between p-4"
+        style="border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <div>
+          <div class="font-bold">{{ api.name }} <span class="text-muted text-sm">({{ api.id }})</span></div>
+          <div class="text-muted text-sm mt-1">
+            Module: {{ api.module }} | Function: {{ api.function }}<br>
+            Keys: {{ api.required_keys|join(', ') or 'None' }}<br>
+            Status: <span class="badge {% if api.status == 'available' %}badge-primary{% endif %}">{{ api.status|title
+              }}</span>
           </div>
-          <form method="post" style="margin: 0;" onsubmit="return confirm('Are you sure you want to delete this API?')">
-            <input type="hidden" name="action" value="delete_api">
-            <input type="hidden" name="api_id" value="{{ api.id }}">
-            <button type="submit" class="btn delete">
-              <i class="fas fa-trash"></i> Delete
-            </button>
-          </form>
         </div>
+        <form method="post" style="margin: 0;" onsubmit="return confirm('Are you sure you want to delete this API?')">
+          <input type="hidden" name="action" value="delete_api">
+          <input type="hidden" name="api_id" value="{{ api.id }}">
+          <button type="submit" class="btn btn-ghost btn-icon" style="color: var(--color-danger);">
+            <i class="fas fa-trash"></i>
+          </button>
+        </form>
+      </div>
       {% endfor %}
     </div>
-  {% else %}
-    <div class="empty">
-      <i class="fas fa-inbox" style="font-size: 48px; color: var(--muted);"></i>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon"><i class="fas fa-inbox"></i></div>
       <p>No APIs configured yet.</p>
     </div>
-  {% endif %}
+    {% endif %}
+  </div>
 </div>
 
-<div class="panel">
-  <h3><i class="fas fa-info-circle"></i> Instructions</h3>
-  <ul style="color: var(--muted); line-height: 1.6;">
-    <li><strong>API ID:</strong> A unique identifier for the API (e.g., 'starwars')</li>
-    <li><strong>Display Name:</strong> Human-readable name shown in the interface</li>
-    <li><strong>Module:</strong> Python module path (e.g., 'apis.starwars_api')</li>
-    <li><strong>Function:</strong> Function name that takes a query string and returns results</li>
-    <li><strong>Keys:</strong> Environment variable names required for this API (comma-separated)</li>
-    <li>API functions should return either a dict (name -> image_url) or list of dicts with 'name' and 'image' keys</li>
-    <li>Keys are stored in the .env file and loaded automatically</li>
-  </ul>
+<div class="card mt-4">
+  <div class="card-header">
+    <h3><i class="fas fa-info-circle"></i> Instructions</h3>
+  </div>
+  <div class="card-body">
+    <ul class="text-muted text-sm" style="list-style-type: disc; padding-left: 1.5rem; line-height: 1.6;">
+      <li><strong>API ID:</strong> A unique identifier for the API (e.g., 'starwars')</li>
+      <li><strong>Display Name:</strong> Human-readable name shown in the interface</li>
+      <li><strong>Module:</strong> Python module path (e.g., 'apis.starwars_api')</li>
+      <li><strong>Function:</strong> Function name that takes a query string and returns results</li>
+      <li><strong>Keys:</strong> Environment variable names required for this API (comma-separated)</li>
+      <li>API functions should return either a dict (name -> image_url) or list of dicts with 'name' and 'image' keys
+      </li>
+      <li>Keys are stored in the .env file and loaded automatically</li>
+    </ul>
+  </div>
 </div>
 {% endblock %}

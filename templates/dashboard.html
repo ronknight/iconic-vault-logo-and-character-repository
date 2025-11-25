@@ -1,55 +1,95 @@
 {% extends 'base.html' %}
-{% block title %}Dashboard · Iconic Vault{% endblock %}
+{% block title %}Dashboard - Iconic Vault{% endblock %}
 {% block content %}
-  <div class="panel">
-    <h2 style="margin:0 0 8px 0;font-size:18px;">Overview</h2>
-    <div class="grid">
-      <div class="card" style="align-items:flex-start;gap:6px;">
-        <div class="brandname"><i class="fas fa-images"></i> Total Logos</div>
-        <div style="font-size:28px;font-weight:700;">{{ logo_count }}</div>
-      </div>
-      <div class="card" style="align-items:flex-start;gap:6px;">
-        <div class="brandname"><i class="fas fa-user-astronaut"></i> Saved Characters</div>
-        <div style="font-size:28px;font-weight:700;">{{ char_count }}</div>
-      </div>
+<div class="mb-4">
+  <h1>Dashboard</h1>
+  <p class="text-muted">Overview of your vault statistics and recent activity.</p>
+</div>
+
+<div class="grid grid-auto-fit gap-4 mb-4">
+  <div class="card p-4 flex items-center gap-4">
+    <div class="btn-icon"
+      style="background-color: var(--color-primary-bg); color: var(--color-primary); font-size: 2rem; width: 64px; height: 64px; border-radius: 50%;">
+      <i class="fas fa-images"></i>
+    </div>
+    <div>
+      <div class="text-muted text-sm">Total Logos</div>
+      <div style="font-size: 2rem; font-weight: 700;">{{ logo_count }}</div>
     </div>
   </div>
 
-  <div class="panel">
-    <h2 style="margin:0 0 8px 0;font-size:18px;">Recent Logos</h2>
-    {% if recent_logos %}
-      <div class="grid">
-        {% for fname, brand, _ in recent_logos %}
-        <div class="card" title="{{ brand }}">
-          <div class="thumb"><img src="{{ url_for('uploaded_file', filename=fname) }}" alt="{{ brand }}"></div>
-          <div class="brandname">{{ brand }}</div>
-          <div class="actions">
-            <a class="iconbtn view" href="{{ url_for('uploaded_file', filename=fname) }}" target="_blank" title="View"><i class="fas fa-eye"></i></a>
-            <a class="iconbtn download" href="{{ url_for('download_logo', filename=fname) }}" download title="Download"><i class="fas fa-download"></i></a>
+  <div class="card p-4 flex items-center gap-4">
+    <div class="btn-icon"
+      style="background-color: rgba(22, 163, 74, 0.15); color: var(--color-success); font-size: 2rem; width: 64px; height: 64px; border-radius: 50%;">
+      <i class="fas fa-user-astronaut"></i>
+    </div>
+    <div>
+      <div class="text-muted text-sm">Total Characters</div>
+      <div style="font-size: 2rem; font-weight: 700;">{{ char_count }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));">
+  <div class="card">
+    <div class="card-header flex items-center justify-between">
+      <h3>Recent Logos</h3>
+      <a href="{{ url_for('logos_page') }}" class="btn btn-ghost text-sm">View All</a>
+    </div>
+    <div class="card-body p-0">
+      {% if recent_logos %}
+      <div class="flex flex-col">
+        {% for fname, brand, mtime in recent_logos %}
+        <a href="{{ url_for('uploaded_file', filename=fname) }}" target="_blank" class="flex items-center gap-4 p-4"
+          style="border-bottom: 1px solid var(--border-color); text-decoration: none; color: inherit;">
+          <div
+            style="width: 48px; height: 48px; padding: 4px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: white; display: flex; align-items: center; justify-content: center;">
+            <img src="{{ url_for('uploaded_file', filename=fname) }}" alt="{{ brand }}"
+              style="max-width: 100%; max-height: 100%; object-fit: contain;">
           </div>
-        </div>
+          <div>
+            <div class="font-bold">{{ brand }}</div>
+            <div class="text-muted text-sm">Added recently</div>
+          </div>
+        </a>
         {% endfor %}
       </div>
-    {% else %}
-      <div class="empty">No recent logos yet.</div>
-    {% endif %}
-    <div class="meta"><a class="btn ghost" href="{{ url_for('logos_page') }}"><i class="fas fa-images"></i> Logos</a></div>
+      {% else %}
+      <div class="empty-state py-8">
+        <p class="text-muted">No recent logos.</p>
+      </div>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="panel">
-    <h2 style="margin:0 0 8px 0;font-size:18px;">Characters</h2>
-    {% if sample_characters %}
-      <div class="grid">
-        {% for name, img in sample_characters %}
-        <div class="card" title="{{ name }}">
-          <div class="thumb" style="aspect-ratio:1/1"><img src="/{{ img }}" alt="{{ name }}"></div>
-          <div class="brandname">{{ name }}</div>
-        </div>
+  <div class="card">
+    <div class="card-header flex items-center justify-between">
+      <h3>Sample Characters</h3>
+      <a href="{{ url_for('characters_page') }}" class="btn btn-ghost text-sm">View All</a>
+    </div>
+    <div class="card-body p-0">
+      {% if sample_characters %}
+      <div class="flex flex-col">
+        {% for name, image in sample_characters %}
+        <a href="{{ image }}" target="_blank" class="flex items-center gap-4 p-4"
+          style="border-bottom: 1px solid var(--border-color); text-decoration: none; color: inherit;">
+          <div
+            style="width: 48px; height: 48px; padding: 4px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: white; display: flex; align-items: center; justify-content: center;">
+            <img src="{{ image }}" alt="{{ name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+          </div>
+          <div>
+            <div class="font-bold">{{ name }}</div>
+            <div class="text-muted text-sm">Licensed Character</div>
+          </div>
+        </a>
         {% endfor %}
       </div>
-    {% else %}
-      <div class="empty">No characters saved yet.</div>
-    {% endif %}
-    <div class="meta"><a class="btn ghost" href="{{ url_for('characters_page') }}"><i class="fas fa-user-astronaut"></i> Characters</a></div>
+      {% else %}
+      <div class="empty-state py-8">
+        <p class="text-muted">No characters found.</p>
+      </div>
+      {% endif %}
+    </div>
   </div>
+</div>
 {% endblock %}

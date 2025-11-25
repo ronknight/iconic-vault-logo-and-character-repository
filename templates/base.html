@@ -5,57 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Iconic Vault{% endblock %}</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <style>
-    :root {
-      --bg: #f5f7fb; --card: #ffffff; --text: #1f2a37; --muted: #6b7280;
-      --primary: #2563eb; --primary-hover: #1d4ed8; --success: #16a34a; --danger: #dc2626; --info: #0ea5e9;
-      --ring: rgba(37,99,235,0.25); --border: #e5e7eb; --shadow: rgba(2,6,23,.06);
-    }
-    [data-theme="dark"] {
-      --bg: #0b1220; --card: #0f172a; --text: #e5e7eb; --muted: #94a3b8;
-      --primary: #60a5fa; --primary-hover: #3b82f6; --success: #22c55e; --danger: #ef4444; --info: #38bdf8;
-      --ring: rgba(96,165,250,0.25); --border: #1f2a44; --shadow: rgba(0,0,0,.35);
-    }
-    *{box-sizing:border-box}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--text)}
-    .container{max-width:1200px;margin:0 auto;padding:12px 16px}
-    .topbar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);box-shadow:0 4px 18px var(--shadow)}
-    .brandbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:700}
-    .nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .spacer{flex:1}
-    .btn{height:36px;padding:0 12px;display:inline-flex;align-items:center;gap:8px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--text);text-decoration:none;cursor:pointer}
-    .btn.primary{background:var(--primary);color:#fff;border:none}
-    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
-    .btn:hover{filter:brightness(.97)}
-    .badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px}
-    .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:12px;box-shadow:0 6px 20px var(--shadow)}
-    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;align-items:center;transition:transform .12s ease,box-shadow .12s ease}
-    .card:hover{transform:translateY(-2px);box-shadow:0 6px 20px var(--shadow)}
-    .thumb{width:100%;aspect-ratio:1.6/1;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:10px;overflow:hidden;border:1px dashed var(--border)}
-    .thumb img{max-width:95%;max-height:95%;object-fit:contain;display:block}
-    .brandname{font-weight:600;font-size:14px;text-align:center}
-    .actions{display:flex;gap:8px}
-    .iconbtn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:none;color:#fff;cursor:pointer;text-decoration:none}
-    .view{background:var(--info)}.download{background:var(--success)}.delete{background:var(--danger)}
-    .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-    .controls form{display:contents}
-    .field{display:flex;gap:8px;align-items:center}
-    .input,.select{height:38px;border:1px solid var(--border);border-radius:10px;padding:0 12px;font-size:14px;background:#fff;color:var(--text)}
-    .input{width:260px}
-    .input:focus,.select:focus{outline:none;box-shadow:0 0 0 4px var(--ring);border-color:var(--primary)}
-    .flash{background:#ecfeff;border:1px solid #a5f3fc;color:#164e63;padding:10px 12px;border-radius:10px;margin:12px 0}
-    .meta{color:var(--muted);font-size:13px;margin-top:8px}
-    .empty{text-align:center;color:var(--muted);padding:40px 10px}
-    .pager{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:12px}
-    .pager .left,.pager .right{display:flex;gap:8px;align-items:center}
-    .pagebtn{min-width:36px;height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-    .pagebtn.active{background:var(--primary);color:#fff;border:none}
-    .link{color:var(--primary);text-decoration:none}
-    .link:hover{text-decoration:underline}
-    .source-icon{max-width:24px;max-height:20px;margin-left:4px;border-radius:4px;object-fit:contain}
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block head_extra %}{% endblock %}
   <script>
     (function(){
@@ -65,43 +15,56 @@
   </script>
 </head>
 <body>
-  <div class="topbar">
-    <div class="container brandbar">
-      <div class="brand"><i class="fas fa-vault"></i> Iconic Vault <span class="badge">v1</span></div>
-      <div class="nav">
-        <a class="btn ghost" href="{{ url_for('home') }}"><i class="fas fa-home"></i> Home</a>
-        <a class="btn ghost" href="{{ url_for('logos_page') }}"><i class="fas fa-images"></i> Logos</a>
-        <a class="btn ghost" href="{{ url_for('characters_page') }}"><i class="fas fa-user-astronaut"></i> Characters</a>
-        <a class="btn ghost" href="{{ url_for('upload_excel') }}"><i class="fas fa-file-excel"></i> Import</a>
-        <a class="btn ghost" href="{{ url_for('dashboard') }}"><i class="fas fa-chart-pie"></i> Dashboard</a>
-        <a class="btn ghost" href="{{ url_for('admin_page') }}"><i class="fas fa-cogs"></i> Admin</a>
+  <nav class="navbar">
+    <div class="container flex items-center justify-between" style="height: 100%;">
+      <div class="flex items-center gap-4">
+        <a href="{{ url_for('home') }}" class="flex items-center gap-2" style="font-weight: 700; font-size: 1.125rem;">
+          <i class="fas fa-vault" style="color: var(--color-primary);"></i> Iconic Vault
+          <span class="badge badge-primary">v2</span>
+        </a>
+        <div class="flex items-center gap-2" style="margin-left: 1rem;">
+          <a class="nav-link" href="{{ url_for('home') }}"><i class="fas fa-home"></i> Home</a>
+          <a class="nav-link" href="{{ url_for('logos_page') }}"><i class="fas fa-images"></i> Logos</a>
+          <a class="nav-link" href="{{ url_for('characters_page') }}"><i class="fas fa-user-astronaut"></i> Characters</a>
+          <a class="nav-link" href="{{ url_for('upload_excel') }}"><i class="fas fa-file-excel"></i> Import</a>
+          <a class="nav-link" href="{{ url_for('dashboard') }}"><i class="fas fa-chart-pie"></i> Dashboard</a>
+          <a class="nav-link" href="{{ url_for('admin_page') }}"><i class="fas fa-cogs"></i> Admin</a>
+        </div>
       </div>
-      <div class="spacer"></div>
-      <button class="btn" id="themeToggle" title="Toggle theme"><i class="fas fa-moon"></i></button>
+      <button class="btn btn-ghost btn-icon" id="themeToggle" title="Toggle theme">
+        <i class="fas fa-moon"></i>
+      </button>
     </div>
-  </div>
+  </nav>
 
-  <div class="container">
+  <main class="container" style="padding-top: 2rem; padding-bottom: 2rem;">
     {% with messages = get_flashed_messages() %}
       {% if messages %}
-        <div class="flash">
+        <div class="flash-messages">
           {% for message in messages %}
-            <div>{{ message }}</div>
+            <div class="flash-message">{{ message }}</div>
           {% endfor %}
         </div>
       {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}
-  </div>
+  </main>
 
   <script>
     const toggle = document.getElementById('themeToggle');
+    const updateIcon = (theme) => {
+      toggle.innerHTML = theme === 'light' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+    };
+    
+    // Set initial icon
+    updateIcon(document.documentElement.getAttribute('data-theme') || 'light');
+
     toggle && toggle.addEventListener('click', () => {
       const cur = document.documentElement.getAttribute('data-theme') || 'light';
       const next = cur === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
-      toggle.innerHTML = next === 'light' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+      updateIcon(next);
     });
   </script>
   {% block scripts %}{% endblock %}
